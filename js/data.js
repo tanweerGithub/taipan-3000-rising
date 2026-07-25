@@ -371,4 +371,27 @@ window.GAME_DATA = {
     minMult: 0.8,
     maxMult: 1.22,
   },
+
+  /**
+   * Moneylender (Madame Sera Quill — Haven Spindle).
+   * Interest accrues on each completed travel hop while debt > 0.
+   */
+  moneylender: {
+    stationId: "haven_spindle",
+    name: "Madame Sera Quill",
+    minLoan: 100,
+    maxLoan: 1200,
+    /** Fraction of outstanding debt added per travel turn. */
+    interestPerTravel: 0.04,
+    /** Soft first-loan message; terms still charge interest. */
+    firstLoanBonus: 0,
+  },
+
+  /** Stations with a full tavern UI (others can still use generic rumor pools later). */
+  tavernStations: {
+    haven_spindle: {
+      name: "The Last Honest Cup",
+      keeper: "Pax Renn",
+    },
+  },
 };

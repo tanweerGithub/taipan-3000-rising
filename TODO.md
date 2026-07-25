@@ -12,6 +12,14 @@ for *Taipan 3000 SE* / *Space Rangers 2*-class depth of experience — enough va
 that a full playthrough does not feel like a short loop, and finishing the story
 feels earned. Do not stop at “minimum DoD lines” for content systems.
 
+## Standing product note — locations in time
+
+See **GAME_DESIGN.md §8 — locations exist in time**.
+
+Per-location visit memory (visit count, turns since last visit) should drive tavern
+flavor, rumors, and NPC texture so returning to a dock feels different from the first
+landing — without a full calendar sim.
+
 ## Stage 2 shell — deferred polish (code review)
 
 - [ ] **Dual visibility model** (`js/main.js`, `css/style.css`)  
@@ -42,3 +50,20 @@ feels earned. Do not stop at “minimum DoD lines” for content systems.
 ## Design note — hull soft floor (intentional, not a bug)
 
 Hull damage clamps to a **minimum of 1**. That is the accessible **no permanent failure** rule from earlier (no dead ship / hard game-over from combat). Damage *does* apply; it just never finishes the ship. If combat ever needs higher stakes, use other levers (cargo loss, rep, forced repairs) rather than hull 0 unless design revisits soft-fail.
+
+## Stage 6 — deferred tech debt (code review)
+
+- [ ] **#3 Tavern panel message wiped** (`js/main.js`)  
+  `handleTavernAction` sets `#tavern-message` then `renderTavern()` clears it. Murmur still shows text; pick one feedback channel.
+
+- [ ] **#4 Scavenge doesn’t re-check net-worth milestones** (`js/trading.js` extract)  
+  Salvage can push net worth over the Name beat threshold, but `onEconomyChange` only runs on buy/sell/loan/travel. Call it after successful extract (and surface story overlay from UI).
+
+- [ ] **#5 Lender closed UI leaves Terms aside visible** (`js/main.js` `renderLender`)  
+  Mirror tavern: hide the aside when moneylender isn’t available at this dock.
+
+- [ ] **#8 Lender copy / unused knobs** (`js/data.js`, Terms list)  
+  “Terms worsen” oversells flat per-hop interest; `firstLoanBonus` and `profitableTrades` are unused. Align copy or implement; remove dead fields (simplicity).
+
+- [ ] **#9 Hard-coded Haven subtitles** (`js/main.js` tavern/lender)  
+  Fine while Haven-only; use station/meta names from data when a second tavern/lender dock is added.

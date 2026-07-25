@@ -2,7 +2,7 @@
  * Taipan 3000: Rising — UI: nav, trading, galaxy map, scavenge.
  */
 (function () {
-  var SCREEN_IDS = ["station", "galaxy", "tavern", "ship"];
+  var SCREEN_IDS = ["station", "galaxy", "tavern", "lender", "ship"];
   var state = null;
 
   function showScreen(id) {
@@ -35,6 +35,9 @@
     if (id === "station") renderDock();
     if (id === "ship") renderShip();
     if (id === "galaxy") renderGalaxy();
+    if (id === "tavern") renderTavern();
+    if (id === "lender") renderLender();
+    maybeShowStoryBeat();
   }
 
   function el(id) {
@@ -101,6 +104,42 @@
     msg.hidden = !text;
   }
 
+  function setPanelMessage(id, text) {
+    var msg = el(id);
+    if (!msg) return;
+    msg.textContent = text || "";
+    msg.hidden = !text;
+  }
+
+  function maybeShowStoryBeat() {
+    var overlay = el("story-overlay");
+    if (!overlay) return;
+    var beat = state && state.pendingStoryBeat;
+    if (!beat) {
+      overlay.hidden = true;
+      overlay.setAttribute("aria-hidden", "true");
+      return;
+    }
+    overlay.hidden = false;
+    overlay.setAttribute("aria-hidden", "false");
+    el("story-title").textContent = beat.title;
+    el("story-body").textContent = beat.body;
+  }
+
+  function dismissStoryBeat() {
+    if (!state || !state.pendingStoryBeat) return;
+    Narrative.clearStoryBeat(state);
+    // Immediately queue next already-ready beat (don't wait for another trade/hop)
+    Narrative.checkMilestones(state);
+    maybeShowStoryBeat();
+    renderHud();
+  }
+
+  function afterEconomyOrTravel() {
+    maybeShowStoryBeat();
+    renderHud();
+  }
+
   function renderDock() {
     var marketPanel = el("panel-market");
     var scavengePanel = el("panel-scavenge");
@@ -144,6 +183,20 @@
 
     var flavor = el("station-flavor");
     if (flavor) flavor.textContent = "“" + station.flavor + "”";
+    var visitMeta = el("station-visit-meta");
+    if (visitMeta && window.Narrative) {
+      var mem = state.locationMemory[state.locationId];
+      if (mem) {
+        visitMeta.textContent =
+          "Visit #" +
+          mem.visits +
+          (mem.visits > 1
+            ? " · " + mem.turnsSince + " turns since last docking"
+            : " · first landing this run");
+      } else {
+        visitMeta.textContent = "";
+      }
+    }
 
     var tbody = el("market-body");
     tbody.innerHTML = "";
@@ -241,6 +294,108 @@
     el("ship-stat-hull").textContent = state.ship.hull + " / " + state.ship.hullMax;
     el("ship-stat-weapons").textContent = state.ship.weaponSlots + " slots";
     el("ship-stat-speed").textContent = String(state.ship.speed);
+    renderHud();
+  }
+
+  function renderTavern() {
+    var open = el("tavern-open");
+    var closed = el("tavern-closed");
+    var aside = el("tavern-aside");
+    if (!window.Narrative || !Narrative.canUseTavern(state)) {
+      if (open) open.hidden = true;
+      if (closed) closed.hidden = false;
+      if (aside) aside.hidden = true;
+      renderHud();
+      return;
+    }
+    if (open) open.hidden = false;
+    if (closed) closed.hidden = true;
+    if (aside) aside.hidden = false;
+
+    var ctx = Narrative.tavernContext(state);
+    el("tavern-heading").textContent = ctx.stationMeta.name;
+    el("tavern-sub").textContent =
+      "Haven Spindle · visit #" +
+      ctx.visits +
+      (ctx.turnsSince < 999 && ctx.visits > 1
+        ? " · " + ctx.turnsSince + " turns since last drink here"
+        : "");
+    el("tavern-keeper-name").textContent = ctx.stationMeta.keeper;
+    el("tavern-greeting").textContent = ctx.greeting;
+    el("tavern-atmosphere").textContent = ctx.atmosphere;
+    el("tavern-visit-meta").textContent =
+      ctx.phase === "first"
+        ? "The room is still learning your silhouette."
+        : ctx.phase === "return_soon"
+          ? "You left recently — the air hasn’t fully reset."
+          : "Time passed without you. The dock kept living.";
+
+    var faces = el("tavern-faces");
+    faces.innerHTML = "";
+    ctx.faces.forEach(function (line) {
+      var li = document.createElement("li");
+      li.textContent = line;
+      faces.appendChild(li);
+    });
+
+    if (!el("tavern-murmur").dataset.touched) {
+      el("tavern-murmur").textContent =
+        "Ask for a rumor or listen in — the room changes as visits and turns pass.";
+    }
+    setPanelMessage("tavern-message", "");
+    renderHud();
+  }
+
+  function renderLender() {
+    var open = el("lender-open");
+    var closed = el("lender-closed");
+    var cfg = window.GAME_DATA.moneylender;
+    if (!window.Narrative || !Narrative.canUseMoneylender(state)) {
+      if (open) open.hidden = true;
+      if (closed) closed.hidden = false;
+      renderHud();
+      return;
+    }
+    if (open) open.hidden = false;
+    if (closed) closed.hidden = true;
+
+    var lines = window.GAME_DATA.moneylenderLines || {};
+    var greet;
+    if (state.debt > 0) greet = (lines.greet_debt || [])[0];
+    else if (state.loanCount > 0) greet = (lines.greet_return || [])[0];
+    else greet = (lines.greet_first || [])[0];
+
+    el("lender-heading").textContent = cfg.name;
+    el("lender-sub").textContent = "Haven Spindle · debt as a relationship with rules";
+    el("lender-name").textContent = cfg.name;
+    el("lender-greeting").textContent =
+      greet || "“Motion is how interest lives.”";
+    el("lender-credits").textContent = String(state.credits);
+    el("lender-debt").textContent = String(state.debt);
+    el("lender-interest").textContent =
+      Math.round((cfg.interestPerTravel || 0) * 100) + "% per travel hop";
+    el("lender-networth").textContent = String(Narrative.netWorth(state));
+
+    var terms = el("lender-terms");
+    terms.innerHTML = "";
+    [
+      "Min loan " + cfg.minLoan + " cr · max new loan " + cfg.maxLoan + " cr",
+      "Interest while debt remains — charged when you complete a hop",
+      "First loan may open a heritage beat (ledger ink)",
+      "No hard ruin — terms worsen; the game does not end",
+    ].forEach(function (t) {
+      var li = document.createElement("li");
+      li.textContent = t;
+      terms.appendChild(li);
+    });
+
+    var amount = el("lender-amount");
+    if (amount) {
+      amount.min = String(cfg.minLoan);
+      amount.max = String(cfg.maxLoan);
+      if (!amount.value) amount.value = String(cfg.minLoan);
+    }
+    setPanelMessage("lender-message", state.debt > 0 || state.loanCount > 0 ? state.lastMessage : "");
     renderHud();
   }
 
@@ -448,6 +603,7 @@
     }
     renderGalaxy();
     renderHud();
+    afterEconomyOrTravel();
   }
 
   function renderEncounterOverlay() {
@@ -583,6 +739,7 @@
       showScreen("galaxy");
     }
     setMarketMessage(state.lastMessage);
+    afterEconomyOrTravel();
   }
 
   /** Show outcome in the panel first; arrival runs when the player continues. */
@@ -645,9 +802,54 @@
       state.lastMessage = result.error || "Trade failed.";
     }
     renderDock();
+    afterEconomyOrTravel();
+  }
+
+  function handleTavernAction(which) {
+    if (!window.Narrative) return;
+    var result =
+      which === "rumor" ? Narrative.askRumor(state) : Narrative.listenIn(state);
+    if (!result.ok) {
+      setPanelMessage("tavern-message", result.error || "Nothing.");
+      return;
+    }
+    var murmur = el("tavern-murmur");
+    if (murmur) {
+      murmur.textContent = result.text;
+      murmur.dataset.touched = "1";
+    }
+    setPanelMessage("tavern-message", result.text);
+    renderTavern();
+  }
+
+  function handleLenderAction(which) {
+    if (!window.Narrative) return;
+    var input = el("lender-amount");
+    var amount = input ? parseInt(input.value, 10) : 0;
+    var result;
+    if (which === "borrow") {
+      result = Narrative.borrow(state, amount);
+    } else if (which === "repay-all") {
+      result = Narrative.repay(state, state.debt);
+    } else {
+      result = Narrative.repay(state, amount);
+    }
+    if (!result.ok) {
+      setPanelMessage("lender-message", result.error || "Failed.");
+      renderLender();
+      return;
+    }
+    setPanelMessage("lender-message", state.lastMessage);
+    renderLender();
+    afterEconomyOrTravel();
   }
 
   document.addEventListener("click", function (event) {
+    if (event.target.closest("#btn-story-continue")) {
+      dismissStoryBeat();
+      return;
+    }
+
     if (event.target.closest("#btn-encounter-continue")) {
       finishEncounterArrival();
       return;
@@ -663,6 +865,34 @@
     if (event.target.closest("#btn-encounter-disengage")) {
       handleEncounterDisengage();
       return;
+    }
+
+    if (event.target.closest("#btn-rumor")) {
+      handleTavernAction("rumor");
+      return;
+    }
+    if (event.target.closest("#btn-listen")) {
+      handleTavernAction("listen");
+      return;
+    }
+    if (event.target.closest("#btn-borrow")) {
+      handleLenderAction("borrow");
+      return;
+    }
+    if (event.target.closest("#btn-repay-all")) {
+      handleLenderAction("repay-all");
+      return;
+    }
+    if (event.target.closest("#btn-repay")) {
+      handleLenderAction("repay");
+      return;
+    }
+
+    if (state && state.pendingStoryBeat) {
+      if (!event.target.closest("#story-overlay")) {
+        event.preventDefault();
+        return;
+      }
     }
 
     if (state && (state.activeEncounter || state.pendingEncounterResult)) {
@@ -727,6 +957,13 @@
 
   document.addEventListener("keydown", function (event) {
     if (!state) return;
+    if (event.key === "Escape" || event.key === "Enter") {
+      if (state.pendingStoryBeat && (event.key === "Enter" || event.key === "Escape")) {
+        event.preventDefault();
+        dismissStoryBeat();
+        return;
+      }
+    }
     if (event.key === "Escape") {
       if (state.pendingEncounterResult) {
         event.preventDefault();
@@ -749,12 +986,22 @@
   });
 
   function init() {
-    if (!window.GAME_DATA || !window.Trading || !window.Galaxy || !window.Encounters) {
-      console.error("Missing GAME_DATA, Trading, Galaxy, or Encounters modules.");
+    if (
+      !window.GAME_DATA ||
+      !window.Trading ||
+      !window.Galaxy ||
+      !window.Encounters ||
+      !window.Narrative
+    ) {
+      console.error("Missing core modules (data/trading/galaxy/encounters/narrative).");
       return;
     }
     if (!window.GAME_DATA.encounters) {
       console.error("Missing encounter content (encounter-data.js).");
+      return;
+    }
+    if (!window.GAME_DATA.storyBeats) {
+      console.error("Missing story beats (narrative-data.js).");
       return;
     }
     // Random seed each load; tests can call Trading.createState(fixed)

@@ -229,6 +229,15 @@
       scavengePools: {},
       activeEncounter: null,
       pendingTravel: null,
+      lastEncounterSummary: null,
+      pendingEncounterResult: null,
+      pendingStoryBeat: null,
+      storyFlags: {},
+      storyFired: {},
+      locationMemory: {},
+      rumorHeard: {},
+      uniqueStations: {},
+      loanCount: 0,
     };
 
     Object.keys(DATA.factions).forEach(function (fid) {
@@ -262,6 +271,11 @@
     if (isAtStation(state)) {
       ensureSupply(state, state.locationId);
       rollVisitNoise(state);
+    }
+
+    if (global.Narrative) {
+      global.Narrative.ensureNarrativeState(state);
+      global.Narrative.noteVisit(state, state.locationId);
     }
 
     state.lastMessage =
@@ -311,6 +325,7 @@
     );
     state.lastMessage =
       "Bought " + qty + "× " + good.name + " for " + total + " cr (" + price + " each).";
+    if (global.Narrative) global.Narrative.onEconomyChange(state);
     return { ok: true };
   }
 
@@ -340,6 +355,7 @@
     state.supply[state.locationId][goodId] += qty * DATA.market.supplyStep;
     state.lastMessage =
       "Sold " + qty + "× " + good.name + " for " + total + " cr (" + price + " each).";
+    if (global.Narrative) global.Narrative.onEconomyChange(state);
     return { ok: true };
   }
 
@@ -386,6 +402,11 @@
     } else {
       state.lastMessage = arrival;
     }
+
+    if (global.Narrative) {
+      global.Narrative.onTravelComplete(state);
+    }
+
     return { ok: true, fuelCost: fuelCost, arrived: true, encounter: false };
   }
 

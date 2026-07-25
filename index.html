@@ -69,6 +69,9 @@
       <button type="button" class="nav-btn" data-screen="tavern">
         Tavern
       </button>
+      <button type="button" class="nav-btn" data-screen="lender">
+        Moneylender
+      </button>
       <button type="button" class="nav-btn" data-screen="ship">
         Ship / Hangar
       </button>
@@ -131,13 +134,14 @@
             <h3 class="panel-title">Services</h3>
             <ul class="link-list">
               <li><button type="button" class="text-link" data-screen="tavern">Visit tavern →</button></li>
-              <li><span class="muted">Moneylender (later)</span></li>
+              <li><button type="button" class="text-link" data-screen="lender">Moneylender →</button></li>
               <li><button type="button" class="text-link" data-screen="ship">Inspect ship →</button></li>
               <li><button type="button" class="text-link" data-screen="galaxy">Galaxy map →</button></li>
             </ul>
             <div class="flavor-box">
               <p class="flavor-label">Location flavor</p>
               <p id="station-flavor"></p>
+              <p id="station-visit-meta" class="muted"></p>
             </div>
           </aside>
         </div>
@@ -183,40 +187,104 @@
       <section id="screen-tavern" class="screen" aria-labelledby="tavern-heading" hidden>
         <header class="screen-header">
           <h2 id="tavern-heading">The Last Honest Cup</h2>
-          <p class="screen-sub">Rumors, faces, and soft landings. <span class="muted">Dialogue pools later.</span></p>
+          <p class="screen-sub" id="tavern-sub">Rumors, faces, and soft landings.</p>
         </header>
 
         <div class="layout-split">
-          <article class="panel">
+          <article class="panel" id="tavern-open">
             <h3 class="panel-title">Keep</h3>
             <div class="npc-card">
               <div class="npc-portrait" aria-hidden="true">PR</div>
               <div>
-                <p class="npc-name">Pax Renn <span class="muted">— tavern keeper</span></p>
-                <p class="npc-line">“You look like your parent before a long run. Sit. Money hears better when you’re not shaking.”</p>
+                <p class="npc-name"><span id="tavern-keeper-name">Pax Renn</span> <span class="muted">— tavern keeper</span></p>
+                <p class="npc-line" id="tavern-greeting"></p>
               </div>
             </div>
             <div class="dialogue-box">
               <p class="flavor-label">Tonight’s murmur</p>
-              <p>Someone at the end of the bar is arguing about Ghost Silk rates in Redwake. Someone else is pretending not to listen.</p>
+              <p id="tavern-murmur">Ask for a rumor or listen in.</p>
             </div>
+            <p id="tavern-message" class="market-message" hidden></p>
             <div class="btn-row">
-              <button type="button" class="btn" disabled>Ask for rumors</button>
-              <button type="button" class="btn btn-ghost" disabled>Listen in</button>
+              <button type="button" class="btn" id="btn-rumor">Ask for rumors</button>
+              <button type="button" class="btn btn-ghost" id="btn-listen">Listen in</button>
               <button type="button" class="btn btn-ghost" data-screen="station">Back to station</button>
             </div>
           </article>
 
-          <aside class="panel panel-aside">
+          <article class="panel" id="tavern-closed" hidden>
+            <h3 class="panel-title">No open tavern</h3>
+            <p class="placeholder-note" id="tavern-closed-note">
+              This dock has no full tavern yet — try Haven Spindle’s Last Honest Cup.
+            </p>
+            <button type="button" class="btn btn-ghost" data-screen="station">Back to station</button>
+          </article>
+
+          <aside class="panel panel-aside" id="tavern-aside">
             <h3 class="panel-title">Faces in the room</h3>
-            <ul class="placeholder-list">
-              <li>Dock hands off-shift</li>
-              <li>A Veshari courier nursing cold tea</li>
-              <li>Empty stool with Jex Morrow’s name on a rumor <span class="muted">(not present)</span></li>
-            </ul>
+            <ul id="tavern-faces" class="placeholder-list"></ul>
             <div class="flavor-box">
               <p class="flavor-label">Atmosphere</p>
-              <p>Warm light, recycled coffee, bulkhead music you feel more than hear.</p>
+              <p id="tavern-atmosphere"></p>
+              <p id="tavern-visit-meta" class="muted"></p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- Moneylender -->
+      <section id="screen-lender" class="screen" aria-labelledby="lender-heading" hidden>
+        <header class="screen-header">
+          <h2 id="lender-heading">Moneylender</h2>
+          <p class="screen-sub" id="lender-sub">Debt as a relationship with rules.</p>
+        </header>
+
+        <div class="layout-split">
+          <article class="panel" id="lender-open">
+            <h3 class="panel-title">Office</h3>
+            <div class="npc-card">
+              <div class="npc-portrait" aria-hidden="true">SQ</div>
+              <div>
+                <p class="npc-name"><span id="lender-name">Madame Sera Quill</span> <span class="muted">— moneylender</span></p>
+                <p class="npc-line" id="lender-greeting"></p>
+              </div>
+            </div>
+            <dl class="lender-stats">
+              <div><dt>Your credits</dt><dd id="lender-credits" class="num">—</dd></div>
+              <div><dt>Outstanding debt</dt><dd id="lender-debt" class="num">—</dd></div>
+              <div><dt>Interest</dt><dd id="lender-interest" class="num">—</dd></div>
+            </dl>
+            <div class="btn-row lender-actions">
+              <label class="lender-label">
+                Amount
+                <input type="number" id="lender-amount" class="lender-input" min="100" step="50" value="200" />
+              </label>
+              <button type="button" class="btn" id="btn-borrow">Borrow</button>
+              <button type="button" class="btn btn-ghost" id="btn-repay">Repay</button>
+              <button type="button" class="btn btn-ghost" id="btn-repay-all">Repay all</button>
+            </div>
+            <p id="lender-message" class="market-message" hidden></p>
+            <p class="placeholder-note">
+              Interest accrues on each completed travel hop while debt remains.
+              First loan can unlock a heritage beat (ledger page).
+            </p>
+            <button type="button" class="btn btn-ghost" data-screen="station">Back to station</button>
+          </article>
+
+          <article class="panel" id="lender-closed" hidden>
+            <h3 class="panel-title">No office here</h3>
+            <p class="placeholder-note">
+              Madame Quill keeps her books at Haven Spindle. Dock there to borrow or repay.
+            </p>
+            <button type="button" class="btn btn-ghost" data-screen="station">Back to station</button>
+          </article>
+
+          <aside class="panel panel-aside">
+            <h3 class="panel-title">Terms</h3>
+            <ul class="placeholder-list" id="lender-terms"></ul>
+            <div class="flavor-box">
+              <p class="flavor-label">Net worth (approx.)</p>
+              <p><span class="num-inline" id="lender-networth">—</span> <span class="muted">credits + cargo base − debt</span></p>
             </div>
           </aside>
         </div>
@@ -269,15 +337,29 @@
     </main>
 
     <footer class="app-footer">
-      <p>Stage 5 — encounters + reputation. Open <code>index.html</code>.</p>
+      <p>Stage 6 — heritage story, tavern, moneylender. Open <code>index.html</code>.</p>
     </footer>
+  </div>
+
+  <!-- Heritage story beat modal -->
+  <div id="story-overlay" class="encounter-overlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="story-title">
+    <div class="encounter-panel">
+      <p class="encounter-kicker">Heritage</p>
+      <h2 id="story-title" class="encounter-title"></h2>
+      <div id="story-body" class="encounter-text"></div>
+      <div class="btn-row">
+        <button type="button" class="btn" id="btn-story-continue">Continue</button>
+      </div>
+    </div>
   </div>
 
   <script src="js/data.js"></script>
   <script src="js/encounter-data.js"></script>
+  <script src="js/narrative-data.js"></script>
   <script src="js/galaxy.js"></script>
   <script src="js/trading.js"></script>
   <script src="js/encounters.js"></script>
+  <script src="js/narrative.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

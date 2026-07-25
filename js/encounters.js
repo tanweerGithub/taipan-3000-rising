@@ -294,6 +294,9 @@
     var summary = bits.join(" ");
     state.lastEncounterSummary = summary;
     state.lastMessage = summary;
+    if (global.Narrative) {
+      global.Narrative.markEncounterStoryHooks(state, active.id);
+    }
     state.activeEncounter = null;
     return { done: true, text: closingText, notes: effectNotes, summary: summary };
   }

@@ -280,6 +280,19 @@ Systems stay lightweight (pillar #2); **content** is where depth lives (pools,
 branches, voice, consequence). Prefer more curated text and variation over more
 engine complexity.
 
+### Standing note — locations exist in time (not only in reaction to the player)
+
+Stations and docks should feel like places that **keep living when the player is away**,
+not stage sets that only animate on arrival. If the captain leaves and returns later,
+it should be plausible that something shifted: a rumor gone stale or replaced, an
+NPC’s mood or situation moved on, a light “season / time-of-visit” flavor detail
+different — layered **on top of** reputation and market changes already in play.
+
+**Does not require a full calendar simulation.** Lightweight state is enough, e.g.
+per-location visit count and turns-since-last-visit used to select different tavern
+lines, atmosphere, and NPC texture. Prefer content pools keyed by those signals over
+new simulation subsystems.
+
 ---
 
 ## 9. Creative Delegation Brief
