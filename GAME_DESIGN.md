@@ -250,11 +250,35 @@ achieved WITHOUT calling an LLM at runtime:
 
 ## 8. Build Process Notes (for Grok)
 
-- The authoritative, staged build order — with checkpoints and definitions of done —
-  lives in `BUILD_SEQUENCE.md`. Follow that file for execution order; this document
-  is the "what," that one is the "how and when."
+- Work is delivered to you one stage at a time, in prompts from the project owner —
+  don't expect or look for a master build-order file in this directory. Execute
+  what's asked in the current prompt; don't infer or plan future stages ahead of
+  being asked.
 - Follow `CLAUDE.md` guidelines throughout: ask before assuming on ambiguous points,
   don't over-engineer, don't silently modify code/comments outside scope.
+
+### Standing note — content depth & replayability (do not dilute)
+
+The game must feel **genuinely rich and replayable**, not like a thin system with a
+handful of repeated events. *Taipan 3000: Special Edition* earned staying power
+through depth of experience; *Space Rangers 2* (including denominators-era text
+narrative, planet-side vignettes, and side-quest texture) is the reference for
+**story and choice-driven narrative density**. Aim for that quality of experience
+here even though the world is more compact.
+
+**When generating encounter pools, dialogue variety, NPC texture, or any
+content-driven layer:** do **not** stop at the minimum needed to tick a definition
+of done. Ship enough volume and variety that:
+
+- repeats are not obvious within a full playthrough;
+- reaching the heritage ending feels **earned** through a rich, dynamic experience —
+  not a short loop repeated until story flags fire;
+- a player who finishes should feel they *had an experience* — story, narrative, and
+  lived-in texture are first-class, not garnish on the trade sim.
+
+Systems stay lightweight (pillar #2); **content** is where depth lives (pools,
+branches, voice, consequence). Prefer more curated text and variation over more
+engine complexity.
 
 ---
 

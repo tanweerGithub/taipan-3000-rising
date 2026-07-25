@@ -521,6 +521,16 @@ body {
   stroke: var(--border);
   stroke-width: 2;
   stroke-linecap: round;
+  pointer-events: none;
+}
+
+.map-edge.is-lane {
+  stroke: rgba(46, 196, 182, 0.45);
+  stroke-width: 2.5;
+}
+
+.map-node {
+  cursor: pointer;
 }
 
 .map-node circle {
@@ -529,10 +539,32 @@ body {
   stroke-width: 2;
 }
 
+.map-node .map-node-inner {
+  fill: none;
+  stroke: var(--orange-dim);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
 .map-node text {
   fill: var(--text-muted);
   font-size: 11px;
   font-family: var(--font);
+  pointer-events: none;
+}
+
+.map-node.is-reachable circle {
+  stroke: var(--teal);
+}
+
+.map-node.is-scavenge circle {
+  stroke: var(--orange-dim);
+}
+
+.map-node.is-selected circle {
+  stroke: var(--orange);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(232, 155, 60, 0.45));
 }
 
 .map-node.is-current circle {
@@ -544,6 +576,29 @@ body {
 .map-node.is-current text {
   fill: var(--teal);
   font-weight: 600;
+}
+
+.map-node:focus {
+  outline: none;
+}
+
+.map-node:focus circle {
+  stroke: var(--orange);
+}
+
+.num-inline {
+  font-family: var(--mono);
+  color: var(--teal);
+}
+
+.warn-text {
+  color: var(--orange);
+  margin: 0.35rem 0 0;
+}
+
+.scavenge-stat {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
 }
 
 /* —— Ship —— */

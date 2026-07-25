@@ -249,9 +249,49 @@ window.GAME_DATA = {
   ],
 
   scavengeSites: [
-    { id: "bone_arc", name: "The Bone Arc", theme: "Old convoy graveyard" },
-    { id: "silent_lattice", name: "Silent Lattice", theme: "Abandoned research web" },
-    { id: "hullgrave", name: "Hullgrave", theme: "Half-crushed freighter cluster" },
+    {
+      id: "bone_arc",
+      name: "The Bone Arc",
+      theme: "Old convoy graveyard",
+      flavor: "Hulls stacked like ribs. Claim-jumpers leave scorch marks on the good wrecks.",
+      regionId: "ashline",
+      poolMax: 28,
+      regenPerTurn: 1,
+      loot: [
+        { goodId: "ore", weight: 4 },
+        { goodId: "circuits", weight: 2 },
+        { goodId: "coolant", weight: 1 },
+      ],
+    },
+    {
+      id: "silent_lattice",
+      name: "Silent Lattice",
+      theme: "Abandoned research web",
+      flavor: "Dead antennae still point at something. Your scanners tick without asking.",
+      regionId: "quiet_verge",
+      poolMax: 22,
+      regenPerTurn: 1,
+      loot: [
+        { goodId: "circuits", weight: 4 },
+        { goodId: "pharm", weight: 1 },
+        { goodId: "coolant", weight: 2 },
+      ],
+    },
+    {
+      id: "hullgrave",
+      name: "Hullgrave",
+      theme: "Half-crushed freighter cluster",
+      flavor: "Mixed holds and bad oxygen. Sometimes the canisters are not empty.",
+      regionId: "redwake",
+      poolMax: 24,
+      regenPerTurn: 1,
+      loot: [
+        { goodId: "ore", weight: 2 },
+        { goodId: "luxury", weight: 1 },
+        { goodId: "ghost_silk", weight: 1 },
+        { goodId: "arms", weight: 1 },
+      ],
+    },
   ],
 
   /** Starting economy / ship (tunable). */
@@ -284,5 +324,22 @@ window.GAME_DATA = {
     baseSupply: 40,
     supplyStep: 1,
     minPrice: 1,
+  },
+
+  /** Galaxy layout + travel knobs. */
+  galaxy: {
+    mapWidth: 720,
+    mapHeight: 400,
+    /** Region columns left→right (LORE order). */
+    regionOrder: ["lantern_reach", "ashline", "quiet_verge", "redwake"],
+    paddingX: 56,
+    paddingY: 48,
+    /** Fuel burned = max(minFuelCost, round(distance * fuelPerUnit)). */
+    fuelPerUnit: 0.045,
+    minFuelCost: 4,
+    /** Extra edges inside a region beyond a spanning tree (seeded). */
+    extraIntraEdges: 1,
+    /** Bridges between adjacent region columns. */
+    bridgesPerRegionPair: 2,
   },
 };

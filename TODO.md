@@ -3,6 +3,15 @@
 Track deferred polish and known debt so it does not get lost between stages.
 Fix when convenient — none of these block the current stage definition of done.
 
+## Standing product note — content richness
+
+See **GAME_DESIGN.md §8 — Standing note (content depth & replayability)**.
+
+When building encounters, dialogue, NPCs, tavern text, or any narrative pool: aim
+for *Taipan 3000 SE* / *Space Rangers 2*-class depth of experience — enough variety
+that a full playthrough does not feel like a short loop, and finishing the story
+feels earned. Do not stop at “minimum DoD lines” for content systems.
+
 ## Stage 2 shell — deferred polish (code review)
 
 - [ ] **Dual visibility model** (`js/main.js`, `css/style.css`)  
