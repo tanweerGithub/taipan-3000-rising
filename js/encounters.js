@@ -34,11 +34,55 @@
     return removed;
   }
 
+  /**
+   * Why a cost bundle cannot be paid in full (credits/fuel). Null if affordable.
+   * Does not mutate state.
+   */
+  function unaffordableReason(state, effects) {
+    if (!effects) return null;
+    if (typeof effects.credits === "number" && effects.credits < 0) {
+      var needCr = -effects.credits;
+      if (state.credits < needCr) {
+        return "Need " + needCr + " credits (have " + state.credits + ").";
+      }
+    }
+    if (typeof effects.fuel === "number" && effects.fuel < 0) {
+      var needFuel = -effects.fuel;
+      if (state.ship.fuel < needFuel) {
+        return "Need " + needFuel + " fuel (have " + state.ship.fuel + ").";
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Choice is blocked if any of its effect bundles (upfront / success / fail)
+   * has a cost the player cannot pay in full.
+   */
+  function choiceUnaffordableReason(state, choice) {
+    if (!choice) return null;
+    var packs = [choice.effects, choice.successEffects, choice.failEffects];
+    for (var i = 0; i < packs.length; i++) {
+      var reason = unaffordableReason(state, packs[i]);
+      if (reason) return reason;
+    }
+    return null;
+  }
+
+  /**
+   * Apply an effect bundle transactionally: either all paid costs succeed, or nothing.
+   * @returns {{ ok: boolean, notes: string[], error?: string }}
+   */
   function applyEffects(state, effects) {
-    if (!effects) return [];
+    if (!effects) return { ok: true, notes: [] };
+
+    var blocked = unaffordableReason(state, effects);
+    if (blocked) return { ok: false, notes: [], error: blocked };
+
     var notes = [];
     if (typeof effects.credits === "number" && effects.credits !== 0) {
-      state.credits = Math.max(0, state.credits + effects.credits);
+      state.credits += effects.credits;
+      if (state.credits < 0) state.credits = 0; // safety; should not hit after gate
       notes.push((effects.credits > 0 ? "+" : "") + effects.credits + " cr");
     }
     if (typeof effects.fuel === "number" && effects.fuel !== 0) {
@@ -50,6 +94,7 @@
       notes.push((effects.fuel > 0 ? "+" : "") + effects.fuel + " fuel");
     }
     if (typeof effects.hull === "number" && effects.hull !== 0) {
+      // Soft floor at 1 hull — intentional (no permanent fail / dead ship). Not a damage bug.
       state.ship.hull = clamp(state.ship.hull + effects.hull, 1, state.ship.hullMax);
       notes.push((effects.hull > 0 ? "+" : "") + effects.hull + " hull");
     }
@@ -83,7 +128,7 @@
       if (r > 0) notes.push("−" + r + " cargo units");
     }
     if (effects.message) notes.push(effects.message);
-    return notes;
+    return { ok: true, notes: notes };
   }
 
   /** Route faction: destination station faction, or region-biased fallback. */
@@ -222,11 +267,14 @@
   }
 
   function choicePresentation(state, choice) {
+    var unaffordable = choiceUnaffordableReason(state, choice);
     var out = {
       label: choice.label,
       hint: choice.hint || "",
       roll: choice.roll || null,
       chance: null,
+      disabled: !!unaffordable,
+      unaffordableReason: unaffordable,
     };
     if (choice.roll) {
       out.chance = rollChance(state, choice.roll, choice.baseChance);
@@ -243,9 +291,11 @@
     if (effectNotes && effectNotes.length) {
       bits.push("(" + effectNotes.join("; ") + ")");
     }
-    state.lastMessage = bits.join(" ");
+    var summary = bits.join(" ");
+    state.lastEncounterSummary = summary;
+    state.lastMessage = summary;
     state.activeEncounter = null;
-    return { done: true, text: closingText, notes: effectNotes };
+    return { done: true, text: closingText, notes: effectNotes, summary: summary };
   }
 
   /**
@@ -284,8 +334,17 @@
     var choice = node.choices[choiceIndex];
     if (!choice) return { ok: false, error: "Invalid choice." };
 
+    var gate = choiceUnaffordableReason(state, choice);
+    if (gate) {
+      return { ok: false, error: "Can't take that option — " + gate };
+    }
+
     // Immediate effects on choice (before roll/branch)
-    var notes = applyEffects(state, choice.effects);
+    var applied = applyEffects(state, choice.effects);
+    if (!applied.ok) {
+      return { ok: false, error: "Can't take that option — " + applied.error };
+    }
+    var notes = applied.notes.slice();
 
     if (choice.roll) {
       var chance = rollChance(state, choice.roll, choice.baseChance);
@@ -303,7 +362,15 @@
         ? choice.successText || ""
         : choice.failText || "";
       var branchEffects = success ? choice.successEffects : choice.failEffects;
-      notes = notes.concat(applyEffects(state, branchEffects));
+      var branchApplied = applyEffects(state, branchEffects);
+      if (!branchApplied.ok) {
+        // Should be rare after pre-gate; refuse rewards rather than partial apply
+        return {
+          ok: false,
+          error: "Can't complete that outcome — " + branchApplied.error,
+        };
+      }
+      notes = notes.concat(branchApplied.notes);
 
       var next = success
         ? choice.successNext != null
@@ -379,6 +446,7 @@
     disengage: disengage,
     currentNode: currentNode,
     choicePresentation: choicePresentation,
+    choiceUnaffordableReason: choiceUnaffordableReason,
     rollChance: rollChance,
     repOf: repOf,
     applyEffects: applyEffects,

@@ -357,13 +357,12 @@
     state.turn += 1;
     regenerateScavengePools(state);
 
-    var prefix = opts.afterEncounter ? "After the encounter, " : "";
+    var arrival;
     if (dest.type === "station") {
       ensureSupply(state, destId);
       rollVisitNoise(state);
-      state.lastMessage =
-        prefix +
-        "arrived at " +
+      arrival =
+        "Arrived at " +
         dest.name +
         " (−" +
         fuelCost +
@@ -371,15 +370,21 @@
     } else {
       var pool = state.scavengePools[destId];
       var left = pool ? pool.remaining : 0;
-      state.lastMessage =
-        prefix +
-        "arrived at " +
+      arrival =
+        "Arrived at " +
         dest.name +
         " (−" +
         fuelCost +
         " fuel). Salvage pool: " +
         left +
         ".";
+    }
+
+    // Keep encounter resolution readable — do not erase it with arrival alone.
+    if (opts.afterEncounter && state.lastEncounterSummary) {
+      state.lastMessage = state.lastEncounterSummary + "\n\n" + arrival;
+    } else {
+      state.lastMessage = arrival;
     }
     return { ok: true, fuelCost: fuelCost, arrived: true, encounter: false };
   }

@@ -586,12 +586,11 @@
               "“Pharm stock, coolant, anything. We can pay in gratitude and bad coffee.”",
             choices: [
               {
-                label: "Donate pharm if you have it",
-                // effects resolved dynamically if no pharm — engine handles cargoAdd only;
-                // use credits path as fallback via two choices - keep simple: always allow donate credits or cargo
+                label: "Donate 30 credits for supplies",
+                hint: "Cash gift — not cargo from your hold",
                 effects: { rep: { veil: 8, veshari: 3 }, credits: -30 },
                 text:
-                  "Whether from hold or purse, help lands. A child sleeps without shaking. " +
+                  "You transfer credits for their next dock stop. A child sleeps without shaking. " +
                   "Someone says your parent once did the same on this run.",
               },
               {
@@ -1229,11 +1228,12 @@
               },
               {
                 label: "Dispute the debt",
-                next: "dispute",
                 roll: "talk",
                 baseChance: 0.4,
                 successNext: "dispute_win",
                 failNext: "dispute_lose",
+                successText: "Your figures hold under the forge-light.",
+                failText: "Your figures do not hold. The debt is real.",
               },
               {
                 label: "Walk away from Korr goodwill",

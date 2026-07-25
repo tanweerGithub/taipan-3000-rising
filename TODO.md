@@ -27,3 +27,18 @@ feels earned. Do not stop at “minimum DoD lines” for content systems.
 
 - [ ] `prefers-reduced-motion` guard on screen fade animation  
 - [ ] Brittle `.panel-title` adjacent-sibling spacing selectors → prefer `.panel > * + .panel-title` or gap
+
+## Stage 5 — deferred tech debt (code review)
+
+- [ ] **Rep / price knob alignment** (`js/data.js` `reputationEconomy`)  
+  `buyDiscountAtMax` implies a stronger discount than `minMult` allows; advertised max swing is clamped. Align numbers so knobs match observed prices.
+
+- [ ] **Growing global click handler** (`js/main.js`)  
+  One document-level click listener now routes trade, map, travel, encounters, disengage, continue, reseed, and screen nav. Split into smaller handlers or a tiny dispatcher when the next system lands.
+
+- [ ] **Content/effect mismatches elsewhere**  
+  Some encounter labels still imply cargo sales without removing stock (e.g. “Sell at fair frontier rates” grants seeds + credits). Audit labels vs `effects` when expanding the pool.
+
+## Design note — hull soft floor (intentional, not a bug)
+
+Hull damage clamps to a **minimum of 1**. That is the accessible **no permanent failure** rule from earlier (no dead ship / hard game-over from combat). Damage *does* apply; it just never finishes the ship. If combat ever needs higher stakes, use other levers (cargo loss, rep, forced repairs) rather than hull 0 unless design revisits soft-fail.

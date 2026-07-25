@@ -455,7 +455,9 @@
     if (!overlay) return;
 
     var active = state.activeEncounter;
-    if (!active) {
+    var resolution = state.pendingEncounterResult;
+
+    if (!active && !resolution) {
       overlay.hidden = true;
       overlay.setAttribute("aria-hidden", "true");
       return;
@@ -463,6 +465,36 @@
 
     overlay.hidden = false;
     overlay.setAttribute("aria-hidden", "false");
+
+    var disengageBtn = el("btn-encounter-disengage");
+    var oddsEl = el("encounter-odds");
+    var choicesEl = el("encounter-choices");
+    var logEl = el("encounter-log");
+    var hintEl = document.querySelector(".encounter-dismiss-hint");
+
+    // Closing beat: show outcome before travel arrival replaces the scene
+    if (resolution && !active) {
+      if (disengageBtn) disengageBtn.hidden = true;
+      if (hintEl) hintEl.hidden = true;
+      el("encounter-kicker").textContent = "Encounter resolved";
+      el("encounter-title").textContent = resolution.title || "Outcome";
+      el("encounter-text").textContent = resolution.summary || resolution.text || "";
+      logEl.hidden = true;
+      logEl.innerHTML = "";
+      oddsEl.textContent =
+        "Read the outcome, then continue to finish the hop and return to the map.";
+      choicesEl.innerHTML = "";
+      var cont = document.createElement("button");
+      cont.type = "button";
+      cont.className = "btn";
+      cont.id = "btn-encounter-continue";
+      cont.textContent = "Continue to destination";
+      choicesEl.appendChild(cont);
+      return;
+    }
+
+    if (disengageBtn) disengageBtn.hidden = false;
+    if (hintEl) hintEl.hidden = false;
 
     var node = Encounters.currentNode(active);
     el("encounter-kicker").textContent =
@@ -473,7 +505,6 @@
     el("encounter-title").textContent = active.title;
     el("encounter-text").textContent = node ? node.text : "";
 
-    var logEl = el("encounter-log");
     if (active.log && active.log.length) {
       logEl.hidden = false;
       logEl.innerHTML = active.log
@@ -486,11 +517,10 @@
       logEl.innerHTML = "";
     }
 
-    var oddsEl = el("encounter-odds");
     oddsEl.textContent =
-      "Rolls show clear odds. Ship weapons, speed, hull, and standing nudge the dice.";
+      "Rolls show clear odds. Ship weapons, speed, hull, and standing nudge the dice. " +
+      "Greyed options cost more than you can pay right now.";
 
-    var choicesEl = el("encounter-choices");
     choicesEl.innerHTML = "";
     if (!node) return;
 
@@ -500,6 +530,10 @@
       btn.type = "button";
       btn.className = "btn encounter-choice";
       btn.setAttribute("data-encounter-choice", String(idx));
+      if (pres.disabled) {
+        btn.disabled = true;
+        btn.title = pres.unaffordableReason || "Cannot afford this option";
+      }
 
       var label = document.createElement("span");
       label.className = "encounter-choice-label";
@@ -512,7 +546,12 @@
         ch.textContent = " ~" + Math.round(pres.chance * 100) + "%";
         btn.appendChild(ch);
       }
-      if (pres.hint) {
+      if (pres.disabled && pres.unaffordableReason) {
+        var need = document.createElement("span");
+        need.className = "encounter-choice-hint";
+        need.textContent = pres.unaffordableReason;
+        btn.appendChild(need);
+      } else if (pres.hint) {
         var hint = document.createElement("span");
         hint.className = "encounter-choice-hint";
         hint.textContent = pres.hint;
@@ -530,10 +569,11 @@
       .replace(/"/g, "&quot;");
   }
 
-  function afterEncounterResolved() {
+  function finishEncounterArrival() {
     if (state.pendingTravel) {
       Encounters.finishPendingTravel(state);
     }
+    state.pendingEncounterResult = null;
     renderEncounterOverlay();
     renderHud();
     var screen = document.querySelector(".screen.is-active");
@@ -545,17 +585,32 @@
     setMarketMessage(state.lastMessage);
   }
 
+  /** Show outcome in the panel first; arrival runs when the player continues. */
+  function showEncounterResolution(result, title) {
+    state.pendingEncounterResult = {
+      title: title || "Outcome",
+      summary: result.summary || result.text || state.lastEncounterSummary || "",
+      text: result.text || "",
+    };
+    renderEncounterOverlay();
+    renderHud();
+  }
+
   function handleEncounterChoice(idx) {
     if (!state.activeEncounter) return;
+    var title = state.activeEncounter.title;
     var result = Encounters.choose(state, state.activeEncounter, idx);
     if (!result.ok) {
       state.lastMessage = result.error || "Choice failed.";
+      // Keep them in the encounter; flash the error in odds line via re-render + message
       renderEncounterOverlay();
+      var oddsEl = el("encounter-odds");
+      if (oddsEl) oddsEl.textContent = result.error || "Choice failed.";
       return;
     }
 
     if (result.done) {
-      afterEncounterResolved();
+      showEncounterResolution(result, title);
       return;
     }
 
@@ -566,12 +621,13 @@
 
   function handleEncounterDisengage() {
     if (!state.activeEncounter) return;
+    var title = state.activeEncounter.title;
     var result = Encounters.disengage(state);
     if (!result.ok) {
       state.lastMessage = result.error || "Could not leave encounter.";
       return;
     }
-    afterEncounterResolved();
+    showEncounterResolution(result, title);
   }
 
   function handleTradeClick(event) {
@@ -592,8 +648,14 @@
   }
 
   document.addEventListener("click", function (event) {
+    if (event.target.closest("#btn-encounter-continue")) {
+      finishEncounterArrival();
+      return;
+    }
+
     var encChoice = event.target.closest("[data-encounter-choice]");
     if (encChoice) {
+      if (encChoice.disabled) return;
       handleEncounterChoice(parseInt(encChoice.getAttribute("data-encounter-choice"), 10));
       return;
     }
@@ -603,8 +665,8 @@
       return;
     }
 
-    if (state && state.activeEncounter) {
-      // Block background UI while an encounter is open (use Disengage to return to map)
+    if (state && (state.activeEncounter || state.pendingEncounterResult)) {
+      // Block background UI while an encounter (or its outcome beat) is open
       if (!event.target.closest("#encounter-overlay")) {
         event.preventDefault();
         return;
@@ -664,10 +726,25 @@
   });
 
   document.addEventListener("keydown", function (event) {
-    if (!state || !state.activeEncounter) return;
+    if (!state) return;
     if (event.key === "Escape") {
+      if (state.pendingEncounterResult) {
+        event.preventDefault();
+        finishEncounterArrival();
+        return;
+      }
+      if (state.activeEncounter) {
+        event.preventDefault();
+        handleEncounterDisengage();
+      }
+    }
+    if (
+      event.key === "Enter" &&
+      state.pendingEncounterResult &&
+      !state.activeEncounter
+    ) {
       event.preventDefault();
-      handleEncounterDisengage();
+      finishEncounterArrival();
     }
   });
 
