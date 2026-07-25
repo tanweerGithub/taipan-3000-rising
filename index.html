@@ -35,7 +35,29 @@
           <dd id="hud-cargo">—</dd>
         </div>
       </dl>
+      <div id="rep-strip" class="rep-strip" aria-label="Faction standing"></div>
     </header>
+
+    <!-- Encounter modal (travel interrupts) -->
+    <div id="encounter-overlay" class="encounter-overlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="encounter-title">
+      <div class="encounter-panel">
+        <div class="encounter-panel-top">
+          <p id="encounter-kicker" class="encounter-kicker"></p>
+          <button type="button" class="btn btn-ghost btn-small" id="btn-encounter-disengage" title="Skip this encounter and finish travel (Esc)">
+            Disengage
+          </button>
+        </div>
+        <h2 id="encounter-title" class="encounter-title"></h2>
+        <div id="encounter-text" class="encounter-text"></div>
+        <div id="encounter-log" class="encounter-log" hidden></div>
+        <p id="encounter-odds" class="encounter-odds muted"></p>
+        <div id="encounter-choices" class="encounter-choices"></div>
+        <p class="encounter-dismiss-hint muted">
+          Stuck or want the map back? <strong>Disengage</strong> skips the scene and completes the hop.
+          Story choices below are how you engage — you can’t click other planets until this is closed.
+        </p>
+      </div>
+    </div>
 
     <nav class="screen-nav" aria-label="Main screens">
       <button type="button" class="nav-btn is-active" data-screen="station" aria-current="page">
@@ -247,13 +269,15 @@
     </main>
 
     <footer class="app-footer">
-      <p>Stage 4 — galaxy map, travel, and scavenge sites. Open <code>index.html</code>.</p>
+      <p>Stage 5 — encounters + reputation. Open <code>index.html</code>.</p>
     </footer>
   </div>
 
   <script src="js/data.js"></script>
+  <script src="js/encounter-data.js"></script>
   <script src="js/galaxy.js"></script>
   <script src="js/trading.js"></script>
+  <script src="js/encounters.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

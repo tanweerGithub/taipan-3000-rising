@@ -98,11 +98,36 @@
     return state.ship.cargoCapacity - cargoUsed(state);
   }
 
+  function clamp(n, lo, hi) {
+    return Math.max(lo, Math.min(hi, n));
+  }
+
+  /** Station-faction standing → buy/sell multipliers (better rep = better deals). */
+  function reputationPriceMods(state, factionId) {
+    var eco = DATA.reputationEconomy || {};
+    var rep = 0;
+    if (factionId && state.reputation && typeof state.reputation[factionId] === "number") {
+      rep = state.reputation[factionId];
+    }
+    var t = clamp(rep, -100, 100) / 100;
+    var buyDiscount = eco.buyDiscountAtMax != null ? eco.buyDiscountAtMax : 0.14;
+    var sellBonus = eco.sellBonusAtMax != null ? eco.sellBonusAtMax : 0.1;
+    var buyMult = 1 - t * buyDiscount;
+    var sellMult = 1 + t * sellBonus;
+    var minM = eco.minMult != null ? eco.minMult : 0.86;
+    var maxM = eco.maxMult != null ? eco.maxMult : 1.16;
+    return {
+      rep: rep,
+      buyMult: clamp(buyMult, minM, maxM),
+      sellMult: clamp(sellMult, minM, maxM),
+    };
+  }
+
   function pricesFor(state, goodId) {
     var good = commodityById(goodId);
     var station = stationById(state.locationId);
     var m = DATA.market;
-    if (!good || !station) return { buy: 0, sell: 0, mid: 0 };
+    if (!good || !station) return { buy: 0, sell: 0, mid: 0, rep: 0 };
 
     ensureSupply(state, state.locationId);
     var mod = station.priceMods[goodId] != null ? station.priceMods[goodId] : 1;
@@ -111,10 +136,25 @@
     var supplyFactor = 1 + (m.baseSupply - stock) * 0.012;
     var mid = Math.round(good.basePrice * mod * noise * supplyFactor);
     mid = Math.max(m.minPrice, mid);
-    var buy = Math.max(m.minPrice, Math.round(mid * m.buySpread));
-    var sell = Math.max(m.minPrice, Math.round(mid * m.sellSpread));
+    var rmod = reputationPriceMods(state, station.factionId);
+    var buy = Math.max(
+      m.minPrice,
+      Math.round(mid * m.buySpread * rmod.buyMult)
+    );
+    var sell = Math.max(
+      m.minPrice,
+      Math.round(mid * m.sellSpread * rmod.sellMult)
+    );
     if (sell > buy) sell = buy;
-    return { buy: buy, sell: sell, mid: mid };
+    return {
+      buy: buy,
+      sell: sell,
+      mid: mid,
+      rep: rmod.rep,
+      buyMult: rmod.buyMult,
+      sellMult: rmod.sellMult,
+      factionId: station.factionId,
+    };
   }
 
   function initScavengePools(state) {
@@ -187,6 +227,8 @@
       reputation: {},
       turn: 0,
       scavengePools: {},
+      activeEncounter: null,
+      pendingTravel: null,
     };
 
     Object.keys(DATA.factions).forEach(function (fid) {
@@ -302,10 +344,54 @@
   }
 
   /**
-   * Travel to a connected node. Burns fuel, advances turn, regenerates scavenge pools.
+   * Finalize arrival after fuel already committed (and optional en-route encounter).
+   */
+  function completeTravel(state, destId, fuelCost, opts) {
+    ensureData();
+    opts = opts || {};
+    var dest = global.Galaxy.getNode(state.galaxy, destId);
+    if (!dest) return { ok: false, error: "Unknown destination." };
+
+    state.locationId = destId;
+    state.selectedDestId = null;
+    state.turn += 1;
+    regenerateScavengePools(state);
+
+    var prefix = opts.afterEncounter ? "After the encounter, " : "";
+    if (dest.type === "station") {
+      ensureSupply(state, destId);
+      rollVisitNoise(state);
+      state.lastMessage =
+        prefix +
+        "arrived at " +
+        dest.name +
+        " (−" +
+        fuelCost +
+        " fuel). Market noise refreshed.";
+    } else {
+      var pool = state.scavengePools[destId];
+      var left = pool ? pool.remaining : 0;
+      state.lastMessage =
+        prefix +
+        "arrived at " +
+        dest.name +
+        " (−" +
+        fuelCost +
+        " fuel). Salvage pool: " +
+        left +
+        ".";
+    }
+    return { ok: true, fuelCost: fuelCost, arrived: true, encounter: false };
+  }
+
+  /**
+   * Travel to a connected node. May interrupt with an en-route encounter.
    */
   function travel(state, destId) {
     ensureData();
+    if (state.activeEncounter) {
+      return { ok: false, error: "Resolve the current encounter first." };
+    }
     if (destId === state.locationId) {
       return { ok: false, error: "Already here." };
     }
@@ -324,30 +410,30 @@
     var dest = global.Galaxy.getNode(state.galaxy, destId);
     if (!dest) return { ok: false, error: "Unknown destination." };
 
+    // Commit fuel at departure; arrival may wait on encounter resolution
     state.ship.fuel -= cost;
-    state.locationId = destId;
     state.selectedDestId = null;
-    state.turn += 1;
-    regenerateScavengePools(state);
 
-    if (dest.type === "station") {
-      ensureSupply(state, destId);
-      rollVisitNoise(state);
-      state.lastMessage =
-        "Arrived at " + dest.name + " (−" + cost + " fuel). Market noise refreshed.";
-    } else {
-      var pool = state.scavengePools[destId];
-      var left = pool ? pool.remaining : 0;
-      state.lastMessage =
-        "Arrived at " +
-        dest.name +
-        " (−" +
-        cost +
-        " fuel). Salvage pool: " +
-        left +
-        ".";
+    if (global.Encounters) {
+      var template = global.Encounters.rollForTravel(state, destId);
+      if (template) {
+        state.pendingTravel = { destId: destId, fuelCost: cost };
+        state.activeEncounter = global.Encounters.start(state, template, {
+          destId: destId,
+          fuelCost: cost,
+          routeFaction: global.Encounters.routeFaction(state, destId),
+        });
+        state.lastMessage = "En route — " + template.title + ".";
+        return {
+          ok: true,
+          fuelCost: cost,
+          encounter: true,
+          arrived: false,
+        };
+      }
     }
-    return { ok: true, fuelCost: cost };
+
+    return completeTravel(state, destId, cost, {});
   }
 
   /**
@@ -424,8 +510,10 @@
     buy: buy,
     sell: sell,
     travel: travel,
+    completeTravel: completeTravel,
     extractScavenge: extractScavenge,
     pricesFor: pricesFor,
+    reputationPriceMods: reputationPriceMods,
     cargoUsed: cargoUsed,
     cargoQty: cargoQty,
     freeCargo: freeCargo,

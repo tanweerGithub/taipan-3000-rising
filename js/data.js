@@ -342,4 +342,33 @@ window.GAME_DATA = {
     /** Bridges between adjacent region columns. */
     bridgesPerRegionPair: 2,
   },
+
+  /**
+   * Encounter + reputation knobs.
+   * Content pools live in encounter-data.js (merged onto GAME_DATA.encounters).
+   */
+  encounterConfig: {
+    /** Base chance of any encounter on a successful hop. */
+    baseChance: 0.42,
+    /** How strongly negative faction rep raises encounter chance (0–1 scale at -100). */
+    hostilityRepScale: 0.28,
+    /** Positive rep reduces chance (0–1 scale at +100). */
+    friendRepScale: 0.18,
+    /** Chance a rolled encounter is deep rather than quick. */
+    deepChance: 0.22,
+    /** Clamp shown success odds. */
+    minRoll: 0.12,
+    maxRoll: 0.9,
+  },
+
+  /** Reputation → trade price (station faction standing). */
+  reputationEconomy: {
+    /** At +100 rep, buy prices multiply by (1 - buyDiscountAtMax). */
+    buyDiscountAtMax: 0.22,
+    /** At +100 rep, sell prices multiply by (1 + sellBonusAtMax). */
+    sellBonusAtMax: 0.16,
+    /** Clamp multipliers so markets stay readable. */
+    minMult: 0.8,
+    maxMult: 1.22,
+  },
 };

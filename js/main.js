@@ -53,6 +53,23 @@
     el("hud-fuel").textContent = state.ship.fuel + " / " + state.ship.fuelCapacity;
     el("hud-hull").textContent = state.ship.hull + " / " + state.ship.hullMax;
     el("hud-cargo").textContent = used + " / " + cap;
+    renderRepStrip();
+    renderEncounterOverlay();
+  }
+
+  function renderRepStrip() {
+    var strip = el("rep-strip");
+    if (!strip) return;
+    strip.innerHTML = "";
+    Object.keys(window.GAME_DATA.factions).forEach(function (fid) {
+      var f = window.GAME_DATA.factions[fid];
+      var v = state.reputation[fid] != null ? state.reputation[fid] : 0;
+      var span = document.createElement("span");
+      span.className = "rep-chip" + (v < 0 ? " is-bad" : v > 0 ? " is-good" : "");
+      span.title = f.name + " standing";
+      span.textContent = f.name.replace(/^The /, "") + " " + (v > 0 ? "+" : "") + v;
+      strip.appendChild(span);
+    });
   }
 
   function renderHoldAside() {
@@ -109,11 +126,21 @@
     var region = Trading.regionById(station.regionId);
     var faction = window.GAME_DATA.factions[station.factionId];
 
+    var rmod = Trading.reputationPriceMods(state, station.factionId);
+    var repLabel =
+      (rmod.rep > 0 ? "+" : "") +
+      rmod.rep +
+      " standing · buy ×" +
+      rmod.buyMult.toFixed(2) +
+      " / sell ×" +
+      rmod.sellMult.toFixed(2);
+
     el("station-heading").textContent = station.name + " — Market";
     el("station-sub").textContent =
       (region ? region.name : "") +
       (faction ? " · " + faction.name : "") +
-      " — buy and sell at local prices.";
+      " — " +
+      repLabel;
 
     var flavor = el("station-flavor");
     if (flavor) flavor.textContent = "“" + station.flavor + "”";
@@ -406,6 +433,7 @@
 
   function doTravel() {
     if (!state.selectedDestId) return;
+    if (state.activeEncounter) return;
     var result = Trading.travel(state, state.selectedDestId);
     if (!result.ok) {
       state.lastMessage = result.error || "Travel failed.";
@@ -413,8 +441,137 @@
       setMarketMessage(state.lastMessage);
       return;
     }
+    if (result.encounter) {
+      renderHud();
+      renderEncounterOverlay();
+      return;
+    }
     renderGalaxy();
-    // Stay on map so player sees new position; message also on dock
+    renderHud();
+  }
+
+  function renderEncounterOverlay() {
+    var overlay = el("encounter-overlay");
+    if (!overlay) return;
+
+    var active = state.activeEncounter;
+    if (!active) {
+      overlay.hidden = true;
+      overlay.setAttribute("aria-hidden", "true");
+      return;
+    }
+
+    overlay.hidden = false;
+    overlay.setAttribute("aria-hidden", "false");
+
+    var node = Encounters.currentNode(active);
+    el("encounter-kicker").textContent =
+      (active.tier === "deep" ? "Deep encounter" : "Quick encounter") +
+      (active.faction && window.GAME_DATA.factions[active.faction]
+        ? " · " + window.GAME_DATA.factions[active.faction].name
+        : "");
+    el("encounter-title").textContent = active.title;
+    el("encounter-text").textContent = node ? node.text : "";
+
+    var logEl = el("encounter-log");
+    if (active.log && active.log.length) {
+      logEl.hidden = false;
+      logEl.innerHTML = active.log
+        .map(function (line) {
+          return "<p>" + escapeHtml(line) + "</p>";
+        })
+        .join("");
+    } else {
+      logEl.hidden = true;
+      logEl.innerHTML = "";
+    }
+
+    var oddsEl = el("encounter-odds");
+    oddsEl.textContent =
+      "Rolls show clear odds. Ship weapons, speed, hull, and standing nudge the dice.";
+
+    var choicesEl = el("encounter-choices");
+    choicesEl.innerHTML = "";
+    if (!node) return;
+
+    node.choices.forEach(function (choice, idx) {
+      var pres = Encounters.choicePresentation(state, choice);
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn encounter-choice";
+      btn.setAttribute("data-encounter-choice", String(idx));
+
+      var label = document.createElement("span");
+      label.className = "encounter-choice-label";
+      label.textContent = pres.label;
+      btn.appendChild(label);
+
+      if (pres.chance != null) {
+        var ch = document.createElement("span");
+        ch.className = "encounter-choice-odds";
+        ch.textContent = " ~" + Math.round(pres.chance * 100) + "%";
+        btn.appendChild(ch);
+      }
+      if (pres.hint) {
+        var hint = document.createElement("span");
+        hint.className = "encounter-choice-hint";
+        hint.textContent = pres.hint;
+        btn.appendChild(hint);
+      }
+      choicesEl.appendChild(btn);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function afterEncounterResolved() {
+    if (state.pendingTravel) {
+      Encounters.finishPendingTravel(state);
+    }
+    renderEncounterOverlay();
+    renderHud();
+    var screen = document.querySelector(".screen.is-active");
+    if (screen && screen.id === "screen-galaxy") renderGalaxy();
+    else if (screen && screen.id === "screen-station") renderDock();
+    else {
+      showScreen("galaxy");
+    }
+    setMarketMessage(state.lastMessage);
+  }
+
+  function handleEncounterChoice(idx) {
+    if (!state.activeEncounter) return;
+    var result = Encounters.choose(state, state.activeEncounter, idx);
+    if (!result.ok) {
+      state.lastMessage = result.error || "Choice failed.";
+      renderEncounterOverlay();
+      return;
+    }
+
+    if (result.done) {
+      afterEncounterResolved();
+      return;
+    }
+
+    // Continue deep branch
+    renderEncounterOverlay();
+    renderHud();
+  }
+
+  function handleEncounterDisengage() {
+    if (!state.activeEncounter) return;
+    var result = Encounters.disengage(state);
+    if (!result.ok) {
+      state.lastMessage = result.error || "Could not leave encounter.";
+      return;
+    }
+    afterEncounterResolved();
   }
 
   function handleTradeClick(event) {
@@ -435,6 +592,25 @@
   }
 
   document.addEventListener("click", function (event) {
+    var encChoice = event.target.closest("[data-encounter-choice]");
+    if (encChoice) {
+      handleEncounterChoice(parseInt(encChoice.getAttribute("data-encounter-choice"), 10));
+      return;
+    }
+
+    if (event.target.closest("#btn-encounter-disengage")) {
+      handleEncounterDisengage();
+      return;
+    }
+
+    if (state && state.activeEncounter) {
+      // Block background UI while an encounter is open (use Disengage to return to map)
+      if (!event.target.closest("#encounter-overlay")) {
+        event.preventDefault();
+        return;
+      }
+    }
+
     if (event.target.closest("[data-trade]")) {
       handleTradeClick(event);
       return;
@@ -487,9 +663,21 @@
     }
   });
 
+  document.addEventListener("keydown", function (event) {
+    if (!state || !state.activeEncounter) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleEncounterDisengage();
+    }
+  });
+
   function init() {
-    if (!window.GAME_DATA || !window.Trading || !window.Galaxy) {
-      console.error("Missing GAME_DATA, Trading, or Galaxy modules.");
+    if (!window.GAME_DATA || !window.Trading || !window.Galaxy || !window.Encounters) {
+      console.error("Missing GAME_DATA, Trading, Galaxy, or Encounters modules.");
+      return;
+    }
+    if (!window.GAME_DATA.encounters) {
+      console.error("Missing encounter content (encounter-data.js).");
       return;
     }
     // Random seed each load; tests can call Trading.createState(fixed)
