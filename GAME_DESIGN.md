@@ -181,6 +181,12 @@ For any recurring character: generate a reference sheet first (multiple angles),
 reference that description consistently in every subsequent scene prompt rather than
 re-describing from memory each time. Confirmed working well in testing.
 
+**Multi-expression / multi-context (owner):** recurring cast is **not** one fixed face.
+Lock **identity** (silhouette, hair, props, outfit, species markers) once; then generate
+**variants** for mood, conversation, and place (banter vs heritage weight vs dock cool,
+etc.). Default portrait = cast-tone baseline; story and systems may swap expression
+assets. Edit-chain from the locked base so style and likeness hold.
+
 ---
 
 ## 5. "Living World" Without a Live LLM Dependency

@@ -44,6 +44,89 @@
     return document.getElementById(id);
   }
 
+  var REGION_ART = {
+    lantern_reach: "assets/environments/region-lantern-reach.jpg",
+    ashline: "assets/environments/region-ashline.jpg",
+    quiet_verge: "assets/environments/region-quiet-verge.jpg",
+    redwake: "assets/environments/region-redwake.jpg",
+  };
+  var SCAVENGE_ART = "assets/environments/scavenge-site.jpg";
+
+  /** Per-station / per-scavenge unique backdrops (Stage 7 polish). */
+  var STATION_ART = {
+    haven_spindle: "assets/environments/stations/haven_spindle.jpg",
+    glassmarket: "assets/environments/stations/glassmarket.jpg",
+    twin_dock: "assets/environments/stations/twin_dock.jpg",
+    forgewell: "assets/environments/stations/forgewell.jpg",
+    cinder_port: "assets/environments/stations/cinder_port.jpg",
+    keel_yard: "assets/environments/stations/keel_yard.jpg",
+    last_light: "assets/environments/stations/last_light.jpg",
+    driftgarden: "assets/environments/stations/driftgarden.jpg",
+    pale_harbor: "assets/environments/stations/pale_harbor.jpg",
+    cutlass_node: "assets/environments/stations/cutlass_node.jpg",
+    blacktide: "assets/environments/stations/blacktide.jpg",
+    needlepoint: "assets/environments/stations/needlepoint.jpg",
+    bone_arc: "assets/environments/stations/bone_arc.jpg",
+    silent_lattice: "assets/environments/stations/silent_lattice.jpg",
+    hullgrave: "assets/environments/stations/hullgrave.jpg",
+  };
+
+  var GOOD_ICONS = {
+    ore: "assets/icons/good-ore.png",
+    pharm: "assets/icons/good-pharm.png",
+    circuits: "assets/icons/good-circuits.png",
+    luxury: "assets/icons/good-luxury.png",
+    arms: "assets/icons/good-arms.png",
+    seeds: "assets/icons/good-seeds.png",
+    coolant: "assets/icons/good-coolant.png",
+    ghost_silk: "assets/icons/good-ghost_silk.png",
+  };
+
+  var UI_ICONS = {
+    credits: "assets/icons/credits.png",
+    debt: "assets/icons/debt.png",
+    fuel: "assets/icons/fuel.png",
+    hull: "assets/icons/hull.png",
+    cargo: "assets/icons/cargo.png",
+    mapNode: "assets/icons/map-node.png",
+    scavenge: "assets/icons/scavenge.png",
+    tavern: "assets/icons/tavern.png",
+    ledger: "assets/icons/ledger.png",
+  };
+
+  var PORTRAITS = {
+    rin: "assets/characters/rin-voss-reference.jpg",
+    pax: "assets/characters/pax-renn-portrait.jpg",
+    quill: "assets/characters/sera-quill-portrait.jpg",
+    jex: "assets/characters/jex-morrow-portrait.jpg",
+    jexHeavy: "assets/characters/jex-morrow-portrait-v2-heavier.jpg",
+    liss: "assets/characters/liss-glassmarket-portrait.jpg",
+    yrtak: "assets/characters/yrtak-forge-mother-portrait.jpg",
+    brann: "assets/characters/brann-hale-portrait.jpg",
+  };
+
+  function goodIcon(id) {
+    return GOOD_ICONS[id] || UI_ICONS.cargo;
+  }
+
+  function locationArtUrl(locationId) {
+    if (locationId && STATION_ART[locationId]) return STATION_ART[locationId];
+    var node = state && state.galaxy ? Galaxy.getNode(state.galaxy, locationId) : null;
+    if (node && node.type === "scavenge") return SCAVENGE_ART;
+    var st = locationId ? Trading.stationById(locationId) : null;
+    if (st && REGION_ART[st.regionId]) return REGION_ART[st.regionId];
+    if (node && node.regionId && REGION_ART[node.regionId]) {
+      return REGION_ART[node.regionId];
+    }
+    return REGION_ART.lantern_reach;
+  }
+
+  function setStationArt() {
+    var art = el("station-art");
+    if (!art || !state) return;
+    art.style.backgroundImage = "url('" + locationArtUrl(state.locationId) + "')";
+  }
+
   function renderHud() {
     var used = Trading.cargoUsed(state);
     var cap = state.ship.cargoCapacity;
@@ -56,6 +139,7 @@
     el("hud-fuel").textContent = state.ship.fuel + " / " + state.ship.fuelCapacity;
     el("hud-hull").textContent = state.ship.hull + " / " + state.ship.hullMax;
     el("hud-cargo").textContent = used + " / " + cap;
+    setStationArt();
     renderRepStrip();
     renderEncounterOverlay();
   }
@@ -91,7 +175,17 @@
       ids.forEach(function (id) {
         var g = Trading.commodityById(id);
         var li = document.createElement("li");
-        li.textContent = (g ? g.name : id) + " × " + state.cargo[id];
+        li.className = "hold-item";
+        var img = document.createElement("img");
+        img.className = "good-icon";
+        img.src = goodIcon(id);
+        img.alt = "";
+        img.width = 18;
+        img.height = 18;
+        li.appendChild(img);
+        li.appendChild(
+          document.createTextNode(" " + (g ? g.name : id) + " × " + state.cargo[id])
+        );
         holdList.appendChild(li);
       });
     }
@@ -111,6 +205,16 @@
     msg.hidden = !text;
   }
 
+  function storyPortraitFor(beatId) {
+    if (beatId === "rival_mirror") return PORTRAITS.jexHeavy;
+    if (beatId === "ledger") return PORTRAITS.quill;
+    if (beatId === "ash") return PORTRAITS.brann;
+    if (beatId === "name" || beatId === "pale_wake" || beatId === "capstone") {
+      return PORTRAITS.rin;
+    }
+    return PORTRAITS.rin;
+  }
+
   function maybeShowStoryBeat() {
     var overlay = el("story-overlay");
     if (!overlay) return;
@@ -124,6 +228,11 @@
     overlay.setAttribute("aria-hidden", "false");
     el("story-title").textContent = beat.title;
     el("story-body").textContent = beat.body;
+    var portrait = el("story-portrait");
+    if (portrait) {
+      portrait.src = storyPortraitFor(beat.id);
+      portrait.hidden = false;
+    }
   }
 
   function dismissStoryBeat() {
@@ -174,7 +283,8 @@
       " / sell ×" +
       rmod.sellMult.toFixed(2);
 
-    el("station-heading").textContent = station.name + " — Market";
+    el("station-heading").textContent = "";
+    el("station-heading").appendChild(document.createTextNode(station.name + " — Market"));
     el("station-sub").textContent =
       (region ? region.name : "") +
       (faction ? " · " + faction.name : "") +
@@ -208,7 +318,15 @@
       var tr = document.createElement("tr");
 
       var nameCell = document.createElement("td");
-      nameCell.textContent = good.name + " ";
+      nameCell.className = "good-name-cell";
+      var gIcon = document.createElement("img");
+      gIcon.className = "good-icon";
+      gIcon.src = goodIcon(good.id);
+      gIcon.alt = "";
+      gIcon.width = 20;
+      gIcon.height = 20;
+      nameCell.appendChild(gIcon);
+      nameCell.appendChild(document.createTextNode(" " + good.name + " "));
       if (good.legal === false) {
         var tag = document.createElement("span");
         tag.className = "tag tag-warn";
@@ -271,7 +389,12 @@
     var info = Trading.scavengePoolInfo(state);
     if (!info) return;
 
-    el("station-heading").textContent = info.name + " — Scavenge Site";
+    el("station-heading").innerHTML =
+      '<img class="inline-icon" src="' +
+      UI_ICONS.scavenge +
+      '" alt="" width="22" height="22" /> ' +
+      info.name +
+      " — Scavenge Site";
     el("station-sub").textContent =
       info.theme + " · no market — extract salvage into free cargo space.";
 
@@ -285,6 +408,12 @@
     var extractBtn = el("btn-extract");
     if (extractBtn) {
       extractBtn.disabled = info.remaining <= 0 || Trading.freeCargo(state) <= 0;
+    }
+
+    var scavengeVisual = el("scavenge-visual");
+    if (scavengeVisual) {
+      scavengeVisual.src = locationArtUrl(state.locationId);
+      scavengeVisual.hidden = false;
     }
   }
 
@@ -334,9 +463,53 @@
     faces.innerHTML = "";
     ctx.faces.forEach(function (line) {
       var li = document.createElement("li");
-      li.textContent = line;
+      li.className = "face-line";
+      var thumb = null;
+      var lower = line.toLowerCase();
+      if (lower.indexOf("jex") !== -1) thumb = PORTRAITS.jex;
+      else if (lower.indexOf("veshari") !== -1 || lower.indexOf("courier") !== -1) {
+        thumb = PORTRAITS.liss;
+      } else if (lower.indexOf("korr") !== -1) thumb = PORTRAITS.yrtak;
+      else if (lower.indexOf("compact") !== -1 || lower.indexOf("clerk") !== -1) {
+        thumb = PORTRAITS.brann;
+      }
+      if (thumb) {
+        var img = document.createElement("img");
+        img.className = "face-thumb";
+        img.src = thumb;
+        img.alt = "";
+        img.width = 28;
+        img.height = 28;
+        li.appendChild(img);
+      }
+      li.appendChild(document.createTextNode(line));
       faces.appendChild(li);
     });
+
+    // Known regulars board
+    var regulars = el("tavern-regulars");
+    if (regulars) {
+      regulars.innerHTML = "";
+      [
+        { name: "Liss", role: "Veshari rumor broker", src: PORTRAITS.liss },
+        { name: "Jex", role: "Rival captain", src: PORTRAITS.jex },
+        { name: "Brann", role: "Compact dock", src: PORTRAITS.brann },
+      ].forEach(function (r) {
+        var card = document.createElement("div");
+        card.className = "regular-card";
+        var img = document.createElement("img");
+        img.src = r.src;
+        img.alt = r.name;
+        img.width = 48;
+        img.height = 48;
+        var cap = document.createElement("div");
+        cap.innerHTML =
+          "<strong>" + r.name + "</strong><br/><span class=\"muted\">" + r.role + "</span>";
+        card.appendChild(img);
+        card.appendChild(cap);
+        regulars.appendChild(card);
+      });
+    }
 
     if (!el("tavern-murmur").dataset.touched) {
       el("tavern-murmur").textContent =
@@ -520,8 +693,11 @@
     var region = Trading.regionById(node.regionId);
     var typeLabel = node.type === "scavenge" ? "Scavenge site" : "Trade station";
 
+    var iconSrc = node.type === "scavenge" ? UI_ICONS.scavenge : UI_ICONS.mapNode;
     var html =
-      "<p><strong>" +
+      '<p class="dest-name-row"><img class="good-icon" src="' +
+      iconSrc +
+      '" alt="" width="20" height="20" /> <strong>' +
       node.name +
       "</strong></p>" +
       "<p class=\"muted\">" +
@@ -564,15 +740,27 @@
     state.galaxy.nodes.forEach(function (n) {
       var region = Trading.regionById(n.regionId);
       var li = document.createElement("li");
+      li.className = "galaxy-list-item";
+      var img = document.createElement("img");
+      img.className = "good-icon";
+      img.src = n.type === "scavenge" ? UI_ICONS.scavenge : UI_ICONS.mapNode;
+      img.alt = "";
+      img.width = 16;
+      img.height = 16;
+      li.appendChild(img);
       var here = n.id === state.locationId ? " ← you are here" : "";
       var kind = n.type === "scavenge" ? " [scavenge]" : "";
-      li.textContent =
-        n.name +
-        kind +
-        " (" +
-        (region ? region.name : "?") +
-        ")" +
-        here;
+      li.appendChild(
+        document.createTextNode(
+          " " +
+            n.name +
+            kind +
+            " (" +
+            (region ? region.name : "?") +
+            ")" +
+            here
+        )
+      );
       list.appendChild(li);
     });
   }

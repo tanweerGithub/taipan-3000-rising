@@ -251,6 +251,232 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hud-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 3px;
+  image-rendering: auto;
+}
+
+.inline-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  vertical-align: -4px;
+  margin-right: 0.25rem;
+  border-radius: 4px;
+}
+
+.screen-with-art {
+  position: relative;
+  isolation: isolate;
+}
+
+.screen-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--radius);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.28;
+  pointer-events: none;
+  filter: saturate(0.9);
+}
+
+.screen-art-dim {
+  opacity: 0.18;
+}
+
+.screen-with-art > *:not(.screen-art) {
+  position: relative;
+  z-index: 1;
+}
+
+.npc-portrait-img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-deep);
+}
+
+.ship-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+}
+
+.ship-art-small {
+  max-height: 140px;
+  margin-top: 0.5rem;
+}
+
+.captain-ref {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 160px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  margin-bottom: 0.75rem;
+}
+
+.good-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: middle;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.good-name-cell {
+  white-space: nowrap;
+}
+
+.good-name-cell .good-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 0.25rem;
+}
+
+.hold-item,
+.galaxy-list-item,
+.face-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  list-style: none;
+  margin-left: 0;
+}
+
+.hold-item .good-icon,
+.galaxy-list-item .good-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  vertical-align: -3px;
+  margin-right: 0.2rem;
+  border-radius: 3px;
+}
+
+.scavenge-visual {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  margin-bottom: 0.75rem;
+}
+
+.story-portrait {
+  display: block;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin: 0 0 0.75rem;
+}
+
+.tavern-regulars,
+.known-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.regular-card {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 9rem;
+  padding: 0.35rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.regular-card img,
+.known-faces img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.face-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.rival-row {
+  margin-top: 0.5rem;
+}
+
+.rival-face {
+  margin-top: 0.5rem;
+}
+
+.rival-caption {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.hangar-services li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  list-style: none;
+  margin-left: 0;
+}
+
+.dest-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+}
+
+#tavern-faces,
+#hold-list,
+#galaxy-region-list {
+  padding-left: 0;
 }
 
 .hud-stats dd {
@@ -790,25 +1016,6 @@ body {
 /* —— Ship —— */
 .ship-hero {
   margin-bottom: 0.5rem;
-}
-
-.ship-silhouette {
-  display: grid;
-  place-items: center;
-  min-height: 160px;
-  border-radius: 8px;
-  border: 1px dashed var(--border);
-  background:
-    linear-gradient(160deg, rgba(46, 196, 182, 0.08), transparent 50%),
-    var(--bg-deep);
-  margin-bottom: 0.5rem;
-}
-
-.ship-silhouette-label {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 /* —— Footer —— */

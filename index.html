@@ -15,23 +15,23 @@
       </div>
       <dl class="hud-stats">
         <div>
-          <dt>Credits</dt>
+          <dt><img class="hud-icon" src="assets/icons/credits.png" alt="" width="20" height="20" /> Credits</dt>
           <dd id="hud-credits">—</dd>
         </div>
         <div>
-          <dt>Debt</dt>
+          <dt><img class="hud-icon" src="assets/icons/debt.png" alt="" width="20" height="20" /> Debt</dt>
           <dd id="hud-debt">—</dd>
         </div>
         <div>
-          <dt>Fuel</dt>
+          <dt><img class="hud-icon" src="assets/icons/fuel.png" alt="" width="20" height="20" /> Fuel</dt>
           <dd id="hud-fuel">—</dd>
         </div>
         <div>
-          <dt>Hull</dt>
+          <dt><img class="hud-icon" src="assets/icons/hull.png" alt="" width="20" height="20" /> Hull</dt>
           <dd id="hud-hull">—</dd>
         </div>
         <div>
-          <dt>Cargo</dt>
+          <dt><img class="hud-icon" src="assets/icons/cargo.png" alt="" width="20" height="20" /> Cargo</dt>
           <dd id="hud-cargo">—</dd>
         </div>
       </dl>
@@ -61,25 +61,26 @@
 
     <nav class="screen-nav" aria-label="Main screens">
       <button type="button" class="nav-btn is-active" data-screen="station" aria-current="page">
-        Station
+        <img class="nav-icon" src="assets/icons/map-node.png" alt="" width="16" height="16" /> Station
       </button>
       <button type="button" class="nav-btn" data-screen="galaxy">
-        Galaxy Map
+        <img class="nav-icon" src="assets/icons/map-node.png" alt="" width="16" height="16" /> Galaxy Map
       </button>
       <button type="button" class="nav-btn" data-screen="tavern">
-        Tavern
+        <img class="nav-icon" src="assets/icons/tavern.png" alt="" width="16" height="16" /> Tavern
       </button>
       <button type="button" class="nav-btn" data-screen="lender">
-        Moneylender
+        <img class="nav-icon" src="assets/icons/ledger.png" alt="" width="16" height="16" /> Moneylender
       </button>
       <button type="button" class="nav-btn" data-screen="ship">
-        Ship / Hangar
+        <img class="nav-icon" src="assets/icons/hull.png" alt="" width="16" height="16" /> Ship / Hangar
       </button>
     </nav>
 
     <main id="screens">
       <!-- Station / Market or Scavenge dock -->
-      <section id="screen-station" class="screen is-active" aria-labelledby="station-heading">
+      <section id="screen-station" class="screen is-active screen-with-art" aria-labelledby="station-heading">
+        <div class="screen-art" id="station-art" aria-hidden="true"></div>
         <header class="screen-header">
           <h2 id="station-heading">Station Market</h2>
           <p class="screen-sub" id="station-sub">Buy and sell goods at the local exchange.</p>
@@ -111,7 +112,18 @@
           </article>
 
           <article class="panel" id="panel-scavenge" hidden>
-            <h3 class="panel-title">Salvage Pool</h3>
+            <h3 class="panel-title">
+              <img class="inline-icon" src="assets/icons/scavenge.png" alt="" width="18" height="18" />
+              Salvage Pool
+            </h3>
+            <img
+              id="scavenge-visual"
+              class="scavenge-visual"
+              src="assets/environments/scavenge-site.jpg"
+              alt="Scavenge site"
+              width="640"
+              height="200"
+            />
             <p class="scavenge-stat">
               Remaining: <span class="num-inline" id="scavenge-pool">—</span>
             </p>
@@ -148,7 +160,8 @@
       </section>
 
       <!-- Galaxy Map -->
-      <section id="screen-galaxy" class="screen" aria-labelledby="galaxy-heading" hidden>
+      <section id="screen-galaxy" class="screen screen-with-art" aria-labelledby="galaxy-heading" hidden>
+        <div class="screen-art screen-art-dim" style="background-image:url('assets/environments/region-lantern-reach.jpg')" aria-hidden="true"></div>
         <header class="screen-header">
           <h2 id="galaxy-heading">Galaxy Map</h2>
           <p class="screen-sub" id="galaxy-sub">Click a connected node to travel.</p>
@@ -184,9 +197,10 @@
       </section>
 
       <!-- Tavern -->
-      <section id="screen-tavern" class="screen" aria-labelledby="tavern-heading" hidden>
+      <section id="screen-tavern" class="screen screen-with-art" aria-labelledby="tavern-heading" hidden>
+        <div class="screen-art" style="background-image:url('assets/environments/region-lantern-reach.jpg')" aria-hidden="true"></div>
         <header class="screen-header">
-          <h2 id="tavern-heading">The Last Honest Cup</h2>
+          <h2 id="tavern-heading"><img class="inline-icon" src="assets/icons/tavern.png" alt="" width="22" height="22" /> The Last Honest Cup</h2>
           <p class="screen-sub" id="tavern-sub">Rumors, faces, and soft landings.</p>
         </header>
 
@@ -194,7 +208,7 @@
           <article class="panel" id="tavern-open">
             <h3 class="panel-title">Keep</h3>
             <div class="npc-card">
-              <div class="npc-portrait" aria-hidden="true">PR</div>
+              <img class="npc-portrait-img" src="assets/characters/pax-renn-portrait.jpg" alt="Pax Renn" width="72" height="72" />
               <div>
                 <p class="npc-name"><span id="tavern-keeper-name">Pax Renn</span> <span class="muted">— tavern keeper</span></p>
                 <p class="npc-line" id="tavern-greeting"></p>
@@ -223,6 +237,8 @@
           <aside class="panel panel-aside" id="tavern-aside">
             <h3 class="panel-title">Faces in the room</h3>
             <ul id="tavern-faces" class="placeholder-list"></ul>
+            <h3 class="panel-title">Regulars &amp; rumors</h3>
+            <div id="tavern-regulars" class="tavern-regulars"></div>
             <div class="flavor-box">
               <p class="flavor-label">Atmosphere</p>
               <p id="tavern-atmosphere"></p>
@@ -233,9 +249,10 @@
       </section>
 
       <!-- Moneylender -->
-      <section id="screen-lender" class="screen" aria-labelledby="lender-heading" hidden>
+      <section id="screen-lender" class="screen screen-with-art" aria-labelledby="lender-heading" hidden>
+        <div class="screen-art" style="background-image:url('assets/environments/region-lantern-reach.jpg')" aria-hidden="true"></div>
         <header class="screen-header">
-          <h2 id="lender-heading">Moneylender</h2>
+          <h2 id="lender-heading"><img class="inline-icon" src="assets/icons/ledger.png" alt="" width="22" height="22" /> Moneylender</h2>
           <p class="screen-sub" id="lender-sub">Debt as a relationship with rules.</p>
         </header>
 
@@ -243,7 +260,7 @@
           <article class="panel" id="lender-open">
             <h3 class="panel-title">Office</h3>
             <div class="npc-card">
-              <div class="npc-portrait" aria-hidden="true">SQ</div>
+              <img class="npc-portrait-img" src="assets/characters/sera-quill-portrait.jpg" alt="Madame Sera Quill" width="72" height="72" />
               <div>
                 <p class="npc-name"><span id="lender-name">Madame Sera Quill</span> <span class="muted">— moneylender</span></p>
                 <p class="npc-line" id="lender-greeting"></p>
@@ -291,7 +308,8 @@
       </section>
 
       <!-- Ship / Hangar -->
-      <section id="screen-ship" class="screen" aria-labelledby="ship-heading" hidden>
+      <section id="screen-ship" class="screen screen-with-art" aria-labelledby="ship-heading" hidden>
+        <div class="screen-art screen-art-dim" style="background-image:url('assets/environments/region-ashline.jpg')" aria-hidden="true"></div>
         <header class="screen-header">
           <h2 id="ship-heading">Ship / Hangar</h2>
           <p class="screen-sub">The freighter <strong>Morrowlit</strong> — home with a leak. <span class="muted">Upgrades later.</span></p>
@@ -301,10 +319,7 @@
           <article class="panel">
             <h3 class="panel-title">Morrowlit</h3>
             <div class="ship-hero">
-              <div class="ship-silhouette" role="img" aria-label="Placeholder ship art for the freighter Morrowlit">
-                <span class="ship-silhouette-label">Ship art placeholder</span>
-              </div>
-              <p class="muted">Static 2D ship art will live here. Optional 3D flourish is stretch / later.</p>
+              <img class="ship-art" src="assets/ships/morrowlit-hero.jpg" alt="The freighter Morrowlit" width="640" height="360" />
             </div>
             <h3 class="panel-title">Loadout</h3>
             <table class="data-table" aria-label="Ship stats">
@@ -316,19 +331,34 @@
                 <tr><th scope="row">Speed</th><td class="num" id="ship-stat-speed">—</td></tr>
               </tbody>
             </table>
+            <h3 class="panel-title">Seen in the lanes</h3>
+            <div class="rival-row">
+              <img class="ship-art ship-art-small" src="assets/ships/rival-freighter.jpg" alt="A rival freighter" width="480" height="270" />
+              <img class="npc-portrait-img rival-face" src="assets/characters/jex-morrow-portrait.jpg" alt="Captain Jex Morrow" width="72" height="72" />
+              <p class="muted rival-caption">Jex Morrow’s kind of silhouette — sharp paint, sharper bills.</p>
+            </div>
           </article>
 
           <aside class="panel panel-aside">
+            <h3 class="panel-title">Captain</h3>
+            <img class="captain-ref" src="assets/characters/rin-voss-reference.jpg" alt="Captain Rin Voss" width="320" height="180" />
+            <h3 class="panel-title">Known faces</h3>
+            <div class="known-faces">
+              <img src="assets/characters/yrtak-forge-mother-portrait.jpg" alt="Forge-Mother Yrtak" title="Yrtak — Korr shipwright" width="48" height="48" />
+              <img src="assets/characters/liss-glassmarket-portrait.jpg" alt="Liss of Glassmarket" title="Liss — Veshari broker" width="48" height="48" />
+              <img src="assets/characters/brann-hale-portrait.jpg" alt="Dock Officer Brann Hale" title="Brann Hale — Compact dock" width="48" height="48" />
+              <img src="assets/characters/jex-morrow-portrait-v2-heavier.jpg" alt="Jex heavier mood" title="Jex — heavier look" width="48" height="48" />
+            </div>
             <h3 class="panel-title">Hangar services</h3>
-            <ul class="placeholder-list">
-              <li><button type="button" class="btn btn-small" disabled>Repair hull</button></li>
-              <li><button type="button" class="btn btn-small" disabled>Refuel</button></li>
-              <li><button type="button" class="btn btn-small" disabled>Upgrade ship</button></li>
-              <li><button type="button" class="btn btn-small" disabled>Equip weapons</button></li>
+            <ul class="placeholder-list hangar-services">
+              <li><img class="good-icon" src="assets/icons/hull.png" alt="" width="16" height="16" /> <button type="button" class="btn btn-small" disabled>Repair hull</button></li>
+              <li><img class="good-icon" src="assets/icons/fuel.png" alt="" width="16" height="16" /> <button type="button" class="btn btn-small" disabled>Refuel</button></li>
+              <li><img class="good-icon" src="assets/icons/cargo.png" alt="" width="16" height="16" /> <button type="button" class="btn btn-small" disabled>Upgrade ship</button></li>
+              <li><img class="good-icon" src="assets/icons/good-arms.png" alt="" width="16" height="16" /> <button type="button" class="btn btn-small" disabled>Equip weapons</button></li>
             </ul>
             <div class="flavor-box">
               <p class="flavor-label">Captain’s note</p>
-              <p>Rin Voss — late 20s, flight jacket with faded teal lining, transit compass on a cord.</p>
+              <p>Rin Voss — late 20s, fitted teal-lined flight jacket, compass and pilot goggles. Cool confidence on the surface.</p>
             </div>
             <button type="button" class="btn btn-ghost" data-screen="station">Back to station</button>
           </aside>
@@ -337,7 +367,7 @@
     </main>
 
     <footer class="app-footer">
-      <p>Stage 6 — heritage story, tavern, moneylender. Open <code>index.html</code>.</p>
+      <p>Stage 7 — art integrated. Open <code>index.html</code>.</p>
     </footer>
   </div>
 
@@ -346,6 +376,7 @@
     <div class="encounter-panel">
       <p class="encounter-kicker">Heritage</p>
       <h2 id="story-title" class="encounter-title"></h2>
+      <img id="story-portrait" class="story-portrait" src="assets/characters/rin-voss-reference.jpg" alt="" width="120" height="120" />
       <div id="story-body" class="encounter-text"></div>
       <div class="btn-row">
         <button type="button" class="btn" id="btn-story-continue">Continue</button>
