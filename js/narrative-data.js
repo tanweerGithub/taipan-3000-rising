@@ -86,11 +86,70 @@
         "You find the last fold of the map — not a triumph, not pure tragedy. " +
         "Halden’s trail ends in a choice you can still almost hear: get the proof out, " +
         "or keep a child from inheriting a war with a corporation that never blinks.\n\n" +
-        "There is a last message meant for you. There is also silence where a living voice might have been. " +
-        "What you do with Helix’s name — release, bury, sell leverage — is yours now.\n\n" +
-        "The lanes stay open. The empire of small freights continues. The story has a spine, and an ending that lets you keep flying.",
+        "There is a last message meant for you. There is also silence where a living voice might have been.\n\n" +
+        "What you do with Helix’s name is yours now. Choose carefully — the lanes will remember, " +
+        "even if the official file never will.",
+      /** Player must pick one; drives epilogue §3.10 (not a static ending). */
+      choices: [
+        {
+          id: "release",
+          label: "Release the proof",
+          hint: "Truth into the open lanes",
+        },
+        {
+          id: "bury",
+          label: "Bury the truth",
+          hint: "Protect the living over the file",
+        },
+        {
+          id: "sell",
+          label: "Sell the leverage",
+          hint: "Credits and quiet from Helix-adjacent hands",
+        },
+      ],
     },
   ];
+
+  /**
+   * Epilogue fragment pools — assembled by Narrative.assembleEpilogue from save state.
+   * path: quiet_truth | long_echo | cost_of_light (LORE resolution shapes)
+   * proof: release | bury | sell
+   */
+  D.epilogue = {
+    title: "Captain’s Log — After the Trail",
+    kicker: "Epilogue",
+    introByPath: {
+      quiet_truth:
+        "Halden is confirmed gone. What remains is a last message and a stack of proof " +
+        "that never fit in a legal hold. The trail ends in silence that still has your name on it.",
+      long_echo:
+        "Halden lived long enough to hide one last canister where only a Voss would look. " +
+        "You recovered it. The trail ends with slightly more hope than the official story allowed — " +
+        "and no less weight.",
+      cost_of_light:
+        "Getting the truth cost you Compact warmth and bought you outer-dock memory. " +
+        "The trail ends under political weather that will not clear just because you wish it would.",
+    },
+    proofByChoice: {
+      release:
+        "You released the proof into channels that cannot all be bought. Helix’s name travels now " +
+        "as more than a polite threat. Some docks will close. Some will open wider. You chose light over comfort.",
+      bury:
+        "You buried the truth where it cannot easily be weaponized against people still breathing. " +
+        "The sealed page stays personal. Justice deferred is still a kind of loyalty — to the living, if not the dead.",
+      sell:
+        "You sold leverage to hands that smile like Helix and pay like freighters. Credits climb; " +
+        "your conscience keeps a quieter ledger. The proof still exists — somewhere you no longer control.",
+    },
+    proofEffects: {
+      release: { rep: { compact: -12, veil: 10, veshari: 4 }, credits: 0 },
+      bury: { rep: { compact: 2, veil: -2 }, credits: 0 },
+      sell: { rep: { compact: -6, veil: -4 }, credits: 400 },
+    },
+    closing:
+      "The empire of small freights continues. The Morrowlit still leaks. " +
+      "The story has a spine — and an ending that lets you keep flying.",
+  };
 
   /** Pax / ambient lines keyed by visit phase. */
   D.tavernContent = {

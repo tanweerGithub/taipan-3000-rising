@@ -21,9 +21,269 @@
     if (!state.locationMemory) state.locationMemory = {};
     if (!state.rumorHeard) state.rumorHeard = {};
     if (!state.pendingStoryBeat) state.pendingStoryBeat = null;
+    if (!state.pendingEpilogue) state.pendingEpilogue = null;
     if (state.loanCount == null) state.loanCount = 0;
     if (state.uniqueStations == null) state.uniqueStations = {};
     if (state.profitableTrades == null) state.profitableTrades = 0;
+  }
+
+  function repOf(state, factionId) {
+    var v = state.reputation && state.reputation[factionId];
+    return typeof v === "number" ? v : 0;
+  }
+
+  function clampRep(n) {
+    return Math.max(-100, Math.min(100, n));
+  }
+
+  /**
+   * LORE resolution shape from this playthrough's political weather.
+   * cost_of_light: burned Compact, warm Veil; long_echo: healthier books + hope;
+   * quiet_truth: default bittersweet close.
+   */
+  function heritagePath(state) {
+    var compact = repOf(state, "compact");
+    var veil = repOf(state, "veil");
+    var worth = netWorth(state);
+    if (compact <= -18 && veil >= 12) return "cost_of_light";
+    if (worth >= 2200 && compact > -25) return "long_echo";
+    return "quiet_truth";
+  }
+
+  function factionStandingLine(state, factionId) {
+    var f = data().factions[factionId];
+    if (!f) return null;
+    var v = repOf(state, factionId);
+    var name = f.name;
+    if (v >= 25) {
+      return (
+        name +
+        " still opens a lane for you (" +
+        (v > 0 ? "+" : "") +
+        v +
+        "). Clerks remember a captain who paid debts in more than credits."
+      );
+    }
+    if (v <= -20) {
+      return (
+        name +
+        " keeps your file cold (" +
+        v +
+        "). Expect longer inspections and shorter patience."
+      );
+    }
+    if (v >= 10) {
+      return (
+        name +
+        " rates you as mostly reliable (" +
+        (v > 0 ? "+" : "") +
+        v +
+        ") — not a friend, not a target."
+      );
+    }
+    if (v <= -5) {
+      return (
+        name +
+        " has not forgiven every Voss-shaped irregularity (" +
+        v +
+        "). The temperature is professional and low."
+      );
+    }
+    return null; // neutral — omit from log to keep it short
+  }
+
+  function companionEpilogueLines(state) {
+    var lines = [];
+    var defs = (data().companions || {});
+    var members = (state.crew && state.crew.members) || {};
+
+    Object.keys(defs).forEach(function (id) {
+      var d = defs[id];
+      var m = members[id];
+      if (!m || !m.recruited) {
+        if (id === "ivo") {
+          lines.push(
+            "Ivo never took a berth. The unfinished songs stay on someone else’s dock — " +
+              "a navigator-shaped absence in the jump seat."
+          );
+        }
+        return;
+      }
+      if (m.left) {
+        lines.push(
+          d.name +
+            " left when trust ran out (last reading " +
+            m.trust +
+            "). The berth is empty on purpose."
+        );
+        return;
+      }
+      var trust = m.trust;
+      if (trust >= 40) {
+        lines.push(
+          d.name +
+            " remains aboard with high trust (" +
+            (trust > 0 ? "+" : "") +
+            trust +
+            "). " +
+            (d.role || "Crew") +
+            " who still chooses this ship when the lanes turn mean."
+        );
+      } else if (trust < 0) {
+        lines.push(
+          d.name +
+            " is still on the roster, but trust is thin (" +
+            trust +
+            "). Every talk choice still matters."
+        );
+      } else {
+        lines.push(
+          d.name +
+            " stays on the Morrowlit with steady trust (" +
+            (trust > 0 ? "+" : "") +
+            trust +
+            "). " +
+            (id === "ivo"
+              ? "Unfinished songs still get written between hops."
+              : "The berth is occupied by choice.")
+        );
+      }
+    });
+    return lines;
+  }
+
+  /**
+   * Build captain's log from save data only (§3.10). No live LLM.
+   * @returns {{ title, kicker, path, proofChoice, sections: string[], body: string }}
+   */
+  function assembleEpilogue(state) {
+    ensureNarrativeState(state);
+    var pack = data().epilogue || {};
+    var path = state.storyFlags.heritagePath || heritagePath(state);
+    var proof = state.storyFlags.proofChoice || "bury";
+    var sections = [];
+
+    var intro =
+      (pack.introByPath && pack.introByPath[path]) ||
+      pack.introByPath.quiet_truth ||
+      "";
+    if (intro) sections.push(intro);
+
+    var proofLine =
+      (pack.proofByChoice && pack.proofByChoice[proof]) ||
+      "You made a choice about the proof. The lanes moved on.";
+    sections.push(proofLine);
+
+    var facOrder = ["compact", "veshari", "korr", "veil"];
+    var facLines = [];
+    facOrder.forEach(function (fid) {
+      var line = factionStandingLine(state, fid);
+      if (line) facLines.push(line);
+    });
+    if (facLines.length) {
+      sections.push("Faction weather after the trail:\n" + facLines.join("\n"));
+    } else {
+      sections.push(
+        "Faction weather stays middling — no one loves you enough to write songs, " +
+          "no one hates you enough to write warrants. Yet."
+      );
+    }
+
+    var crewLines = companionEpilogueLines(state);
+    if (crewLines.length) {
+      sections.push(crewLines.join("\n"));
+    }
+
+    if (hasFlag(state, "metRivalMirror") || beatFired(state, "rival_mirror")) {
+      sections.push(
+        "Jex Morrow’s parallel debt remains a mirror, not a myth. " +
+          "Whether rival or almost-ally, you both flew the same unpaid silence."
+      );
+    } else {
+      sections.push(
+        "You closed the trail without ever fully meeting Jex’s grief mid-channel. " +
+          "Some mirrors stay dark until a later hop."
+      );
+    }
+
+    var debt = state.debt || 0;
+    var worth = netWorth(state);
+    sections.push(
+      "Books at closing of the heritage file: net worth about " +
+        worth +
+        " cr" +
+        (debt > 0 ? ", still carrying " + debt + " in Quill’s ledgers" : ", debt clear") +
+        ". Stations logged: " +
+        uniqueStationCount(state) +
+        "."
+    );
+
+    if (pack.closing) sections.push(pack.closing);
+
+    var body = sections.join("\n\n");
+    return {
+      title: pack.title || "Captain’s Log",
+      kicker: pack.kicker || "Epilogue",
+      path: path,
+      proofChoice: proof,
+      sections: sections,
+      body: body,
+    };
+  }
+
+  /**
+   * Capstone choice: set flags, apply light rep/credit effects, queue epilogue.
+   */
+  function resolveCapstoneChoice(state, choiceId) {
+    ensureNarrativeState(state);
+    var beat = state.pendingStoryBeat;
+    if (!beat || beat.id !== "capstone") {
+      return { ok: false, error: "No capstone choice pending." };
+    }
+    if (hasFlag(state, "heritageResolved")) {
+      return { ok: false, error: "Heritage already resolved." };
+    }
+
+    var choices = beat.choices || [];
+    var choice = null;
+    for (var i = 0; i < choices.length; i++) {
+      if (choices[i].id === choiceId) {
+        choice = choices[i];
+        break;
+      }
+    }
+    if (!choice) return { ok: false, error: "Unknown resolution." };
+
+    var path = heritagePath(state);
+    setFlag(state, "heritageResolved");
+    setFlag(state, "proof_" + choiceId);
+    state.storyFlags.proofChoice = choiceId;
+    state.storyFlags.heritagePath = path;
+
+    var effects =
+      (data().epilogue &&
+        data().epilogue.proofEffects &&
+        data().epilogue.proofEffects[choiceId]) ||
+      {};
+    if (effects.rep) {
+      Object.keys(effects.rep).forEach(function (fid) {
+        var before = repOf(state, fid);
+        state.reputation[fid] = clampRep(before + effects.rep[fid]);
+      });
+    }
+    if (typeof effects.credits === "number" && effects.credits !== 0) {
+      state.credits = Math.max(0, (state.credits || 0) + effects.credits);
+    }
+
+    var log = assembleEpilogue(state);
+    state.pendingStoryBeat = null;
+    state.pendingEpilogue = log;
+    state.lastMessage = "Heritage resolved — " + choice.label + ". Captain’s log ready.";
+    return { ok: true, epilogue: log, choice: choice, path: path };
+  }
+
+  function clearEpilogue(state) {
+    state.pendingEpilogue = null;
   }
 
   /** Cargo valued at commodity base prices (simple net-worth proxy). */
@@ -143,6 +403,7 @@
         id: beat.id,
         title: beat.title,
         body: beat.body,
+        choices: beat.choices ? beat.choices.slice() : null,
       };
       state.lastMessage = "Story: " + beat.title;
       return state.pendingStoryBeat;
@@ -400,5 +661,10 @@
     markDeepEncounter: markDeepEncounter,
     markEncounterStoryHooks: markEncounterStoryHooks,
     accrueInterest: accrueInterest,
+    heritagePath: heritagePath,
+    assembleEpilogue: assembleEpilogue,
+    resolveCapstoneChoice: resolveCapstoneChoice,
+    clearEpilogue: clearEpilogue,
+    beatFired: beatFired,
   };
 })(window);

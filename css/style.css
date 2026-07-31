@@ -1018,6 +1018,142 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* —— Crew / companions (Stage 8) —— */
+.crew-chip {
+  border-style: dashed;
+}
+
+.crew-chip.is-flash {
+  border-color: var(--orange);
+  color: var(--orange);
+  animation: crew-flash 1.2s ease-out 1;
+}
+
+@keyframes crew-flash {
+  0% { background: rgba(255, 140, 60, 0.25); }
+  100% { background: transparent; }
+}
+
+.crew-tavern-panel {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.crew-card {
+  margin-bottom: 0.75rem;
+}
+
+.crew-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--teal);
+  background: linear-gradient(145deg, rgba(40, 90, 110, 0.55), rgba(20, 30, 50, 0.9));
+  border: 1px solid var(--border);
+}
+
+.crew-avatar-sm {
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+}
+
+.crew-trust-line {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.crew-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.crew-roster-card {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.crew-roster-head {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  margin-bottom: 0.4rem;
+}
+
+.crew-trust-num {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+}
+
+.crew-blurb {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.trust-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.trust-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--orange), var(--teal));
+  min-width: 2px;
+  transition: width 0.25s ease;
+}
+
+#crew-dialogue-text {
+  white-space: pre-wrap;
+}
+
+/* —— Epilogue / captain's log (Stage 9) —— */
+.epilogue-panel {
+  max-width: 36rem;
+}
+
+.epilogue-meta {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.epilogue-body {
+  white-space: pre-wrap;
+  max-height: min(50vh, 28rem);
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+}
+
+.epilogue-note {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+}
+
+.story-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+}
+
 /* —— Footer —— */
 .app-footer {
   margin-top: auto;

@@ -90,7 +90,7 @@ The capstone answers **what happened to Halden** and **what Rin does with the tr
 2. **The Long Echo** — Halden survived long enough to hide the last canister; Rin recovers it. Same choice set about the proof; slightly more hope in the writing.
 3. **The Cost of Light** — Getting the truth damages standing with Helix-aligned Compact officials (reputation hit) but earns lasting goodwill with Verge communities. Trading continues under that new political weather.
 
-No hard game-over. Epilogue-as-captain’s-log is stretch (GAME_DESIGN §3.10); the story still **resolves** as a narrative capstone even if the reflective screen is later.
+No hard game-over. **Stage 9:** epilogue-as-captain’s-log assembles from reputation, crew trust, and the capstone proof choice (release / bury / sell); path shape (Quiet Truth / Long Echo / Cost of Light) is inferred from playthrough weather. Trading continues after “Keep flying.”
 
 ### Starting reputation bias (ties mystery → §3.7)
 | Faction | Start | Why |
@@ -274,15 +274,15 @@ Starting stats live in balance data later; lore only needs the ship to feel like
 
 Documented so future stages stay consistent; **not MVP**.
 
-### Crew / companions (GAME_DESIGN §3.9 — later)
-| Working name | Hook |
-|---|---|
-| **Ivo** | Soft-spoken Veshari navigator who collects unfinished songs; trust rises when Rin chooses talk over guns |
-| **Tam “Wrench” Sol** | Korr-trained human mechanic; personal quest about a sibling stuck in Forgehold debt |
-| **Nyx** | Veil courier with a past in Ghost Silk runs; tests whether Rin is principle or profit |
+### Crew / companions (GAME_DESIGN §3.9)
+| Working name | Hook | Status |
+|---|---|---|
+| **Ivo** | Soft-spoken Veshari navigator who collects unfinished songs; trust rises when Rin chooses talk over guns | **Stage 8 playable** — recruit at Haven tavern; trust on talk choices + hangar roster |
+| **Tam “Wrench” Sol** | Korr-trained human mechanic; personal quest about a sibling stuck in Forgehold debt | Later |
+| **Nyx** | Veil courier with a past in Ghost Silk runs; tests whether Rin is principle or profit | Later |
 
-### Reflective epilogue (§3.10 — later)
-Captain’s-log collage from reputation extremes, whether Jex ends ally/foe, and which Pale Wake resolution Rin chose. Open trading still continues after.
+### Reflective epilogue (§3.10 — Stage 9)
+Captain’s-log collage from reputation extremes, crew trust/leave/absence, path shape, and which proof choice Rin made at capstone. Open trading still continues after “Keep flying.”
 
 ---
 

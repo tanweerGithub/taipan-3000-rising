@@ -232,17 +232,23 @@
       lastEncounterSummary: null,
       pendingEncounterResult: null,
       pendingStoryBeat: null,
+      pendingEpilogue: null,
       storyFlags: {},
       storyFired: {},
       locationMemory: {},
       rumorHeard: {},
       uniqueStations: {},
       loanCount: 0,
+      crew: { members: {}, lastBanterTurn: -999, pendingBanter: null, lastTrustNote: null },
     };
 
     Object.keys(DATA.factions).forEach(function (fid) {
       state.reputation[fid] = DATA.factions[fid].startRep;
     });
+
+    if (global.Crew) {
+      global.Crew.ensureCrewState(state);
+    }
 
     Object.keys(start.cargo || {}).forEach(function (id) {
       state.cargo[id] = start.cargo[id];
@@ -405,6 +411,14 @@
 
     if (global.Narrative) {
       global.Narrative.onTravelComplete(state);
+    }
+
+    if (global.Crew) {
+      var banter = global.Crew.maybeTravelBanter(state);
+      if (banter && banter.text) {
+        state.lastMessage =
+          (state.lastMessage ? state.lastMessage + "\n\n" : "") + banter.text;
+      }
     }
 
     return { ok: true, fuelCost: fuelCost, arrived: true, encounter: false };

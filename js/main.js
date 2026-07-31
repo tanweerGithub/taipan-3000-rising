@@ -141,6 +141,7 @@
     el("hud-cargo").textContent = used + " / " + cap;
     setStationArt();
     renderRepStrip();
+    renderCrewHud();
     renderEncounterOverlay();
   }
 
@@ -157,6 +158,177 @@
       span.textContent = f.name.replace(/^The /, "") + " " + (v > 0 ? "+" : "") + v;
       strip.appendChild(span);
     });
+  }
+
+  /** Companion trust chips — only when someone is aboard. */
+  function renderCrewHud() {
+    var strip = el("rep-strip");
+    if (!strip || !window.Crew || !state) return;
+    Crew.aboardList(state).forEach(function (c) {
+      var span = document.createElement("span");
+      var tier = Crew.trustTier(c.trust);
+      span.className =
+        "rep-chip crew-chip" +
+        (tier === "low" ? " is-bad" : tier === "high" ? " is-good" : "");
+      span.title = c.name + " · personal trust (not faction rep)";
+      span.textContent = c.name + " trust " + (c.trust > 0 ? "+" : "") + c.trust;
+      strip.appendChild(span);
+    });
+    var note = state.crew && state.crew.lastTrustNote;
+    // Show through arrival turn (trust often moves mid-encounter, then turn++)
+    if (
+      note &&
+      !note.recruited &&
+      (note.turn === state.turn || note.turn === state.turn - 1)
+    ) {
+      var flash = document.createElement("span");
+      flash.className = "rep-chip crew-chip is-flash";
+      flash.textContent =
+        (note.name || "Crew") +
+        " " +
+        (note.delta > 0 ? "+" : "") +
+        note.delta +
+        (note.left ? " · left" : "");
+      strip.appendChild(flash);
+    }
+  }
+
+  function renderCrewRoster() {
+    var box = el("crew-roster");
+    var empty = el("crew-roster-empty");
+    if (!box || !window.Crew) return;
+    var list = Crew.aboardList(state);
+    // Clear dynamic cards; keep empty node if present
+    box.querySelectorAll(".crew-roster-card").forEach(function (n) {
+      n.remove();
+    });
+    if (empty) empty.hidden = list.length > 0;
+    list.forEach(function (c) {
+      var card = document.createElement("div");
+      card.className = "crew-roster-card";
+      var pct = Math.max(0, Math.min(100, 50 + c.trust / 2));
+      card.innerHTML =
+        '<div class="crew-roster-head">' +
+        '<span class="crew-avatar crew-avatar-sm" aria-hidden="true">' +
+        escapeHtml(c.name.charAt(0)) +
+        "</span>" +
+        "<div><strong>" +
+        escapeHtml(c.name) +
+        '</strong> <span class="muted">· ' +
+        escapeHtml(c.role) +
+        " · " +
+        escapeHtml(c.species || "") +
+        "</span>" +
+        '<p class="crew-trust-num">Trust <span class="num-inline">' +
+        (c.trust > 0 ? "+" : "") +
+        c.trust +
+        "</span></p></div></div>" +
+        '<div class="trust-bar" role="meter" aria-valuenow="' +
+        c.trust +
+        '" aria-valuemin="-100" aria-valuemax="100" aria-label="Trust">' +
+        '<div class="trust-bar-fill" style="width:' +
+        pct +
+        '%"></div></div>' +
+        '<p class="muted crew-blurb">' +
+        escapeHtml(c.blurb || "") +
+        "</p>";
+      box.appendChild(card);
+    });
+  }
+
+  /**
+   * Tavern panel: recruit Ivo at Haven, or talk once aboard.
+   */
+  function renderCrewTavern() {
+    var panel = el("crew-tavern-panel");
+    if (!panel || !window.Crew) return;
+
+    var id = "ivo";
+    var d = Crew.def(id);
+    if (!d) {
+      panel.hidden = true;
+      return;
+    }
+
+    var atRecruitDock = state.locationId === d.recruitStationId;
+    var aboard = Crew.isAboard(state, id);
+    var canHire = Crew.canRecruit(state, id);
+
+    if (!atRecruitDock && !aboard) {
+      panel.hidden = true;
+      return;
+    }
+    // Show aboard talk only at tavern docks (Haven)
+    if (aboard && !Narrative.canUseTavern(state)) {
+      panel.hidden = true;
+      return;
+    }
+    if (!aboard && !canHire) {
+      panel.hidden = true;
+      return;
+    }
+
+    panel.hidden = false;
+    el("crew-npc-name").textContent = d.name;
+    el("crew-npc-role").textContent = "— " + d.role + " · " + d.species;
+    el("crew-npc-blurb").textContent = d.blurb;
+
+    var trustLine = el("crew-trust-line");
+    var actions = el("crew-actions");
+    var dialogue = el("crew-dialogue-text");
+    actions.innerHTML = "";
+
+    if (aboard) {
+      trustLine.hidden = false;
+      trustLine.textContent =
+        "Trust: " +
+        (Crew.trustOf(state, id) > 0 ? "+" : "") +
+        Crew.trustOf(state, id) +
+        " · talk to shift it";
+      var talk = Crew.getTalk(state, id);
+      var lastReply =
+        state.crew &&
+        state.crew.lastTalkReply &&
+        state.crew.lastTalkReply.companionId === id
+          ? state.crew.lastTalkReply
+          : null;
+      if (lastReply && lastReply.text) {
+        dialogue.textContent = lastReply.text;
+      } else {
+        dialogue.textContent = talk
+          ? talk.prompt
+          : d.alreadyAboard || "Ivo waits without pressing.";
+      }
+      if (talk) {
+        talk.choices.forEach(function (ch, idx) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn" + (idx === 0 ? "" : " btn-ghost");
+          btn.setAttribute("data-crew-talk", String(idx));
+          btn.setAttribute("data-crew-id", id);
+          btn.textContent = ch.label;
+          actions.appendChild(btn);
+        });
+      }
+    } else {
+      trustLine.hidden = true;
+      dialogue.textContent =
+        Crew.approachText(state, id) + "\n\n" + (d.recruitOffer || "");
+      var hire = document.createElement("button");
+      hire.type = "button";
+      hire.className = "btn";
+      hire.id = "btn-crew-recruit";
+      hire.setAttribute("data-crew-id", id);
+      hire.textContent = "Offer a berth on the Morrowlit";
+      var later = document.createElement("button");
+      later.type = "button";
+      later.className = "btn btn-ghost";
+      later.id = "btn-crew-later";
+      later.setAttribute("data-crew-id", id);
+      later.textContent = "Not now";
+      actions.appendChild(hire);
+      actions.appendChild(later);
+    }
   }
 
   function renderHoldAside() {
@@ -218,10 +390,18 @@
   function maybeShowStoryBeat() {
     var overlay = el("story-overlay");
     if (!overlay) return;
+    // Epilogue takes priority if both somehow set
+    if (state && state.pendingEpilogue) {
+      overlay.hidden = true;
+      overlay.setAttribute("aria-hidden", "true");
+      maybeShowEpilogue();
+      return;
+    }
     var beat = state && state.pendingStoryBeat;
     if (!beat) {
       overlay.hidden = true;
       overlay.setAttribute("aria-hidden", "true");
+      maybeShowEpilogue();
       return;
     }
     overlay.hidden = false;
@@ -233,10 +413,87 @@
       portrait.src = storyPortraitFor(beat.id);
       portrait.hidden = false;
     }
+
+    var actions = el("story-actions");
+    var cont = el("btn-story-continue");
+    if (actions && beat.choices && beat.choices.length) {
+      actions.innerHTML = "";
+      beat.choices.forEach(function (ch) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn story-choice-btn";
+        btn.setAttribute("data-story-choice", ch.id);
+        var label = document.createElement("span");
+        label.className = "encounter-choice-label";
+        label.textContent = ch.label;
+        btn.appendChild(label);
+        if (ch.hint) {
+          var hint = document.createElement("span");
+          hint.className = "encounter-choice-hint";
+          hint.textContent = ch.hint;
+          btn.appendChild(hint);
+        }
+        actions.appendChild(btn);
+      });
+    } else if (actions) {
+      actions.innerHTML = "";
+      if (!cont) {
+        cont = document.createElement("button");
+        cont.type = "button";
+        cont.className = "btn";
+        cont.id = "btn-story-continue";
+        cont.textContent = "Continue";
+      } else {
+        cont.textContent = "Continue";
+        cont.hidden = false;
+      }
+      actions.appendChild(cont);
+    }
+  }
+
+  function maybeShowEpilogue() {
+    var overlay = el("epilogue-overlay");
+    if (!overlay) return;
+    var log = state && state.pendingEpilogue;
+    if (!log) {
+      overlay.hidden = true;
+      overlay.setAttribute("aria-hidden", "true");
+      return;
+    }
+    overlay.hidden = false;
+    overlay.setAttribute("aria-hidden", "false");
+    el("epilogue-title").textContent = log.title || "Captain’s Log";
+    el("epilogue-kicker").textContent = log.kicker || "Epilogue";
+    var meta = el("epilogue-meta");
+    if (meta) {
+      var pathLabel = {
+        quiet_truth: "Path: The Quiet Truth",
+        long_echo: "Path: The Long Echo",
+        cost_of_light: "Path: The Cost of Light",
+      };
+      var proofLabel = {
+        release: "Proof: released",
+        bury: "Proof: buried",
+        sell: "Proof: sold as leverage",
+      };
+      meta.textContent =
+        (pathLabel[log.path] || log.path || "") +
+        " · " +
+        (proofLabel[log.proofChoice] || log.proofChoice || "");
+    }
+    el("epilogue-body").textContent = log.body || "";
   }
 
   function dismissStoryBeat() {
     if (!state || !state.pendingStoryBeat) return;
+    // Capstone requires an explicit resolution choice
+    if (
+      state.pendingStoryBeat.id === "capstone" &&
+      state.pendingStoryBeat.choices &&
+      state.pendingStoryBeat.choices.length
+    ) {
+      return;
+    }
     Narrative.clearStoryBeat(state);
     // Immediately queue next already-ready beat (don't wait for another trade/hop)
     Narrative.checkMilestones(state);
@@ -244,8 +501,30 @@
     renderHud();
   }
 
+  function handleStoryChoice(choiceId) {
+    if (!state || !window.Narrative) return;
+    var result = Narrative.resolveCapstoneChoice(state, choiceId);
+    if (!result.ok) {
+      state.lastMessage = result.error || "Could not resolve.";
+      renderHud();
+      return;
+    }
+    maybeShowStoryBeat();
+    maybeShowEpilogue();
+    renderHud();
+  }
+
+  function dismissEpilogue() {
+    if (!state || !state.pendingEpilogue) return;
+    Narrative.clearEpilogue(state);
+    maybeShowEpilogue();
+    setMarketMessage(state.lastMessage || "The log is filed. The lanes stay open.");
+    renderHud();
+  }
+
   function afterEconomyOrTravel() {
     maybeShowStoryBeat();
+    maybeShowEpilogue();
     renderHud();
   }
 
@@ -423,6 +702,7 @@
     el("ship-stat-hull").textContent = state.ship.hull + " / " + state.ship.hullMax;
     el("ship-stat-weapons").textContent = state.ship.weaponSlots + " slots";
     el("ship-stat-speed").textContent = String(state.ship.speed);
+    renderCrewRoster();
     renderHud();
   }
 
@@ -516,6 +796,7 @@
         "Ask for a rumor or listen in — the room changes as visits and turns pass.";
     }
     setPanelMessage("tavern-message", "");
+    renderCrewTavern();
     renderHud();
   }
 
@@ -1038,6 +1319,17 @@
       return;
     }
 
+    var storyChoice = event.target.closest("[data-story-choice]");
+    if (storyChoice) {
+      handleStoryChoice(storyChoice.getAttribute("data-story-choice"));
+      return;
+    }
+
+    if (event.target.closest("#btn-epilogue-continue")) {
+      dismissEpilogue();
+      return;
+    }
+
     if (event.target.closest("#btn-encounter-continue")) {
       finishEncounterArrival();
       return;
@@ -1063,6 +1355,67 @@
       handleTavernAction("listen");
       return;
     }
+
+    var recruitBtn = event.target.closest("#btn-crew-recruit");
+    if (recruitBtn && window.Crew) {
+      var rid = recruitBtn.getAttribute("data-crew-id") || "ivo";
+      var hired = Crew.recruit(state, rid);
+      if (!hired.ok) {
+        setPanelMessage("crew-message", hired.error || "Could not recruit.");
+      } else {
+        setPanelMessage(
+          "crew-message",
+          hired.text +
+            "\n\nTrust starts at " +
+            hired.trust +
+            ". Watch the HUD and Ship / Hangar crew panel."
+        );
+        var dlg = el("crew-dialogue-text");
+        if (dlg) dlg.textContent = hired.text;
+      }
+      renderTavern();
+      renderHud();
+      return;
+    }
+    if (event.target.closest("#btn-crew-later") && window.Crew) {
+      var lid = event.target.closest("#btn-crew-later").getAttribute("data-crew-id") || "ivo";
+      Crew.markMet(state, lid);
+      var dLater = Crew.def(lid);
+      setPanelMessage(
+        "crew-message",
+        (dLater && dLater.recruitDecline) || "Another time."
+      );
+      var dlgL = el("crew-dialogue-text");
+      if (dlgL && dLater) dlgL.textContent = dLater.recruitDecline;
+      renderCrewTavern();
+      return;
+    }
+    var talkBtn = event.target.closest("[data-crew-talk]");
+    if (talkBtn && window.Crew) {
+      var tid = talkBtn.getAttribute("data-crew-id") || "ivo";
+      var tidx = parseInt(talkBtn.getAttribute("data-crew-talk"), 10);
+      var talked = Crew.resolveTalkChoice(state, tid, tidx);
+      if (!talked.ok) {
+        setPanelMessage("crew-message", talked.error || "…");
+      } else {
+        var dlgT = el("crew-dialogue-text");
+        if (dlgT) dlgT.textContent = talked.reply;
+        setPanelMessage(
+          "crew-message",
+          talked.name +
+            " trust " +
+            (talked.delta > 0 ? "+" : "") +
+            talked.delta +
+            " → now " +
+            talked.trust +
+            "."
+        );
+      }
+      renderTavern();
+      renderHud();
+      return;
+    }
+
     if (event.target.closest("#btn-borrow")) {
       handleLenderAction("borrow");
       return;
@@ -1074,6 +1427,13 @@
     if (event.target.closest("#btn-repay")) {
       handleLenderAction("repay");
       return;
+    }
+
+    if (state && state.pendingEpilogue) {
+      if (!event.target.closest("#epilogue-overlay")) {
+        event.preventDefault();
+        return;
+      }
     }
 
     if (state && state.pendingStoryBeat) {
@@ -1146,7 +1506,19 @@
   document.addEventListener("keydown", function (event) {
     if (!state) return;
     if (event.key === "Escape" || event.key === "Enter") {
+      if (state.pendingEpilogue && (event.key === "Enter" || event.key === "Escape")) {
+        event.preventDefault();
+        dismissEpilogue();
+        return;
+      }
       if (state.pendingStoryBeat && (event.key === "Enter" || event.key === "Escape")) {
+        // Capstone must use on-screen choices, not Enter-to-skip
+        if (
+          state.pendingStoryBeat.choices &&
+          state.pendingStoryBeat.choices.length
+        ) {
+          return;
+        }
         event.preventDefault();
         dismissStoryBeat();
         return;
@@ -1179,9 +1551,10 @@
       !window.Trading ||
       !window.Galaxy ||
       !window.Encounters ||
-      !window.Narrative
+      !window.Narrative ||
+      !window.Crew
     ) {
-      console.error("Missing core modules (data/trading/galaxy/encounters/narrative).");
+      console.error("Missing core modules (data/trading/galaxy/encounters/narrative/crew).");
       return;
     }
     if (!window.GAME_DATA.encounters) {

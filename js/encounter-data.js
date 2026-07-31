@@ -64,8 +64,8 @@
                 failText:
                   "A round kisses your hull plating. Alarms bark. They take a bite of cargo " +
                   "and leave you breathing — barely a kindness.",
-                successEffects: { hull: -4, credits: 40, rep: { veil: -6 } },
-                failEffects: { hull: -14, cargoRemoveUnits: 4, rep: { veil: -3 } },
+                successEffects: { hull: -4, credits: 40, rep: { veil: -6 }, trust: { ivo: -3 } },
+                failEffects: { hull: -14, cargoRemoveUnits: 4, rep: { veil: -3 }, trust: { ivo: -2 } },
               },
               {
                 label: "Flee",
@@ -101,8 +101,8 @@
                 failText:
                   "They laugh without humor. “Poetry doesn’t fill tanks.” They take cargo anyway, " +
                   "but leave your hull mostly honest.",
-                successEffects: { rep: { veil: 8 }, credits: -15 },
-                failEffects: { cargoRemoveUnits: 2, rep: { veil: -2 } },
+                successEffects: { rep: { veil: 8 }, credits: -15, trust: { ivo: 5 } },
+                failEffects: { cargoRemoveUnits: 2, rep: { veil: -2 }, trust: { ivo: 1 } },
               },
             ],
           },
@@ -125,7 +125,7 @@
             choices: [
               {
                 label: "Comply fully",
-                effects: { rep: { compact: 6 }, credits: -10 },
+                effects: { rep: { compact: 6 }, credits: -10, trust: { ivo: 2 } },
                 text:
                   "They find nothing worth a fine — or choose not to. A clerk stamps your lane " +
                   "pass like it hurts him to be fair. “Stay boring, Captain.”",
@@ -140,7 +140,7 @@
                 failText:
                   "They dislike clever mouths. A ‘processing fee’ appears. Your name stays " +
                   "slightly colder in their files.",
-                successEffects: { rep: { compact: 4 } },
+                successEffects: { rep: { compact: 4 }, trust: { ivo: 3 } },
                 failEffects: { credits: -55, rep: { compact: -4 } },
               },
               {
@@ -152,7 +152,7 @@
               },
               {
                 label: "Hard refuse",
-                effects: { rep: { compact: -12 }, hull: -3 },
+                effects: { rep: { compact: -12 }, hull: -3, trust: { ivo: -4 } },
                 text:
                   "You lock holds and quote lane law until their patience snaps. They tag you " +
                   "uncooperative and give you a shove with a warning laser — symbolic, almost.",

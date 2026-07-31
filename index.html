@@ -224,6 +224,24 @@
               <button type="button" class="btn btn-ghost" id="btn-listen">Listen in</button>
               <button type="button" class="btn btn-ghost" data-screen="station">Back to station</button>
             </div>
+
+            <!-- Crew recruit / talk (Stage 8) -->
+            <div id="crew-tavern-panel" class="crew-tavern-panel" hidden>
+              <h3 class="panel-title">Someone at the bar</h3>
+              <div class="npc-card crew-card">
+                <div class="crew-avatar" aria-hidden="true">I</div>
+                <div>
+                  <p class="npc-name"><span id="crew-npc-name">Ivo</span> <span class="muted" id="crew-npc-role">— navigator</span></p>
+                  <p class="npc-line" id="crew-npc-blurb"></p>
+                  <p class="crew-trust-line muted" id="crew-trust-line" hidden></p>
+                </div>
+              </div>
+              <div class="dialogue-box" id="crew-dialogue">
+                <p id="crew-dialogue-text"></p>
+              </div>
+              <div class="btn-row" id="crew-actions"></div>
+              <p id="crew-message" class="market-message" hidden></p>
+            </div>
           </article>
 
           <article class="panel" id="tavern-closed" hidden>
@@ -349,6 +367,10 @@
               <img src="assets/characters/brann-hale-portrait.jpg" alt="Dock Officer Brann Hale" title="Brann Hale — Compact dock" width="48" height="48" />
               <img src="assets/characters/jex-morrow-portrait-v2-heavier.jpg" alt="Jex heavier mood" title="Jex — heavier look" width="48" height="48" />
             </div>
+            <h3 class="panel-title">Crew</h3>
+            <div id="crew-roster" class="crew-roster">
+              <p class="muted" id="crew-roster-empty">No companions aboard yet. Try the tavern at Haven Spindle.</p>
+            </div>
             <h3 class="panel-title">Hangar services</h3>
             <ul class="placeholder-list hangar-services">
               <li><img class="good-icon" src="assets/icons/hull.png" alt="" width="16" height="16" /> <button type="button" class="btn btn-small" disabled>Repair hull</button></li>
@@ -367,7 +389,7 @@
     </main>
 
     <footer class="app-footer">
-      <p>Stage 7 — art integrated. Open <code>index.html</code>.</p>
+      <p>Stage 9 — captain’s log epilogue. Open <code>index.html</code>.</p>
     </footer>
   </div>
 
@@ -378,8 +400,22 @@
       <h2 id="story-title" class="encounter-title"></h2>
       <img id="story-portrait" class="story-portrait" src="assets/characters/rin-voss-reference.jpg" alt="" width="120" height="120" />
       <div id="story-body" class="encounter-text"></div>
-      <div class="btn-row">
+      <div class="btn-row" id="story-actions">
         <button type="button" class="btn" id="btn-story-continue">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reflective epilogue (§3.10) -->
+  <div id="epilogue-overlay" class="encounter-overlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="epilogue-title">
+    <div class="encounter-panel epilogue-panel">
+      <p class="encounter-kicker" id="epilogue-kicker">Epilogue</p>
+      <h2 id="epilogue-title" class="encounter-title">Captain’s Log</h2>
+      <p class="epilogue-meta muted" id="epilogue-meta"></p>
+      <div id="epilogue-body" class="encounter-text epilogue-body"></div>
+      <p class="muted epilogue-note">Trading stays open. This log is your playthrough’s spine — not a game over.</p>
+      <div class="btn-row">
+        <button type="button" class="btn" id="btn-epilogue-continue">Keep flying</button>
       </div>
     </div>
   </div>
@@ -387,10 +423,12 @@
   <script src="js/data.js"></script>
   <script src="js/encounter-data.js"></script>
   <script src="js/narrative-data.js"></script>
+  <script src="js/crew-data.js"></script>
   <script src="js/galaxy.js"></script>
   <script src="js/trading.js"></script>
   <script src="js/encounters.js"></script>
   <script src="js/narrative.js"></script>
+  <script src="js/crew.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

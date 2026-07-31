@@ -127,6 +127,9 @@
       var r = removeCargoUnits(state, effects.cargoRemoveUnits);
       if (r > 0) notes.push("−" + r + " cargo units");
     }
+    if (effects.trust && global.Crew) {
+      notes = notes.concat(global.Crew.applyTrustEffects(state, effects.trust));
+    }
     if (effects.message) notes.push(effects.message);
     return { ok: true, notes: notes };
   }
@@ -348,6 +351,11 @@
       return { ok: false, error: "Can't take that option — " + applied.error };
     }
     var notes = applied.notes.slice();
+
+    // Companion trust reacts to talk vs force when crew is aboard (§3.9)
+    if (global.Crew) {
+      notes = notes.concat(global.Crew.reactToEncounterChoice(state, choice));
+    }
 
     if (choice.roll) {
       var chance = rollChance(state, choice.roll, choice.baseChance);
