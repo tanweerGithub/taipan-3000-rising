@@ -30,7 +30,7 @@ Same person, same design language; expression/posture/lighting shift. Keep both 
 |---|---|
 | `jex-morrow-portrait-v1-charming.jpg` | Brighter scheming/smirk; matches Rin’s lighter panel tone |
 | `jex-morrow-portrait-v2-heavier.jpg` | Melancholy weight under dandy styling; LORE grief core |
-| `jex-morrow-portrait.jpg` | → currently **v2** (pending final: see note below on dual-use) |
+| `jex-morrow-portrait.jpg` | → mirrors **v1 charming** (default UI / cast tone) |
 
 **Jex (identity locked, multi-state):**  
 - **Default / cast tone with Rin:** v1 charming (`jex-morrow-portrait.jpg` → v1)  

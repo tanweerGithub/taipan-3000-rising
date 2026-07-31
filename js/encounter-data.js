@@ -594,7 +594,8 @@
                   "Someone says your parent once did the same on this run.",
               },
               {
-                label: "Sell at fair frontier rates",
+                label: "Fair trade — cash aid for lumen seeds",
+                hint: "You give credits; they press seeds into your hands",
                 effects: { credits: 50, rep: { veil: 4 }, cargoAdd: { seeds: 1 } },
                 text:
                   "You don’t gouge. They don’t forget. A bag of lumen seeds is pressed into your hands — hope as currency.",

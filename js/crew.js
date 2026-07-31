@@ -220,15 +220,40 @@
     if (state.crew) state.crew.pendingBanter = null;
   }
 
+  function formatTrustNote(r) {
+    if (!r || !r.changed) return null;
+    return (
+      (r.name || "Crew") +
+      " trust " +
+      (r.delta > 0 ? "+" : "") +
+      r.delta +
+      " (now " +
+      r.after +
+      ")" +
+      (r.left ? " — leaves the crew" : "")
+    );
+  }
+
+  /** True if this choice already authors trust (skip automatic reaction to avoid double-stack). */
+  function choiceHasAuthoredTrust(choice) {
+    if (!choice) return false;
+    var packs = [choice.effects, choice.successEffects, choice.failEffects];
+    for (var i = 0; i < packs.length; i++) {
+      if (packs[i] && packs[i].trust) return true;
+    }
+    return false;
+  }
+
   /**
    * React to an encounter choice when companions are aboard.
-   * Talk-preferring crew likes talk/comply; dislikes pure fight/hard refuse.
+   * Skipped when the choice already has effects.trust (authored deltas win).
    * @returns {string[]} note strings for the encounter log
    */
   function reactToEncounterChoice(state, choice) {
     var notes = [];
     var list = aboardList(state);
     if (!list.length || !choice) return notes;
+    if (choiceHasAuthoredTrust(choice)) return notes;
 
     var roll = choice.roll || "";
     var label = String(choice.label || "").toLowerCase();
@@ -249,18 +274,8 @@
       }
       if (!delta) return;
       var r = adjustTrust(state, c.id, delta);
-      if (r.changed) {
-        notes.push(
-          c.name +
-            " trust " +
-            (r.delta > 0 ? "+" : "") +
-            r.delta +
-            " (now " +
-            r.after +
-            ")" +
-            (r.left ? " — leaves the crew" : "")
-        );
-      }
+      var note = formatTrustNote(r);
+      if (note) notes.push(note);
     });
     return notes;
   }
@@ -274,17 +289,8 @@
     Object.keys(trustMap).forEach(function (id) {
       var delta = trustMap[id];
       var r = adjustTrust(state, id, delta);
-      if (r.ok && r.changed) {
-        notes.push(
-          (r.name || id) +
-            " trust " +
-            (r.delta > 0 ? "+" : "") +
-            r.delta +
-            " (now " +
-            r.after +
-            ")"
-        );
-      }
+      var note = formatTrustNote(r);
+      if (note) notes.push(note);
     });
     return notes;
   }
@@ -292,8 +298,14 @@
   function getTalk(state, companionId) {
     var talks = (data().companionTalks && data().companionTalks[companionId]) || [];
     if (!talks.length) return null;
-    // First talk for MVP; later can cycle / gate by flags
-    return talks[0];
+    var m = member(state, companionId);
+    if (!m) return null;
+    if (!m.talksDone) m.talksDone = {};
+    for (var i = 0; i < talks.length; i++) {
+      var t = talks[i];
+      if (t && t.id && !m.talksDone[t.id]) return t;
+    }
+    return null;
   }
 
   function resolveTalkChoice(state, companionId, choiceIndex) {
@@ -306,6 +318,11 @@
     if (!choice) return { ok: false, error: "Invalid reply." };
 
     var r = adjustTrust(state, companionId, choice.trust || 0);
+    var m = member(state, companionId);
+    if (m) {
+      if (!m.talksDone) m.talksDone = {};
+      if (talk.id) m.talksDone[talk.id] = true;
+    }
     var d = def(companionId);
     state.crew.lastTalkReply = {
       companionId: companionId,

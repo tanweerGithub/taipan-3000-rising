@@ -364,10 +364,14 @@ window.GAME_DATA = {
   /** Reputation → trade price (station faction standing). */
   reputationEconomy: {
     /** At +100 rep, buy prices multiply by (1 - buyDiscountAtMax). */
-    buyDiscountAtMax: 0.22,
+    buyDiscountAtMax: 0.2,
     /** At +100 rep, sell prices multiply by (1 + sellBonusAtMax). */
     sellBonusAtMax: 0.16,
-    /** Clamp multipliers so markets stay readable. */
+    /**
+     * Clamp multipliers so markets stay readable.
+     * minMult must be ≤ 1 - buyDiscountAtMax; maxMult ≥ 1 + sellBonusAtMax
+     * so advertised swings are not silently clamped away.
+     */
     minMult: 0.8,
     maxMult: 1.22,
   },
@@ -379,12 +383,12 @@ window.GAME_DATA = {
   moneylender: {
     stationId: "haven_spindle",
     name: "Madame Sera Quill",
+    /** Dock label for UI subtitles (not only station id). */
+    dockLabel: "Haven Spindle",
     minLoan: 100,
     maxLoan: 1200,
     /** Fraction of outstanding debt added per travel turn. */
     interestPerTravel: 0.04,
-    /** Soft first-loan message; terms still charge interest. */
-    firstLoanBonus: 0,
   },
 
   /** Stations with a full tavern UI (others can still use generic rumor pools later). */
@@ -392,6 +396,7 @@ window.GAME_DATA = {
     haven_spindle: {
       name: "The Last Honest Cup",
       keeper: "Pax Renn",
+      dockLabel: "Haven Spindle",
     },
   },
 };

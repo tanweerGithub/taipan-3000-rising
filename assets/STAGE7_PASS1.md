@@ -1,7 +1,9 @@
-# Stage 7 — First-pass art (style check)
+# Stage 7 — First-pass art (historical)
 
-Generated against GAME_DESIGN.md §4 painterly/comic hero style.  
-**Full library not authorized until you approve this set.**
+**Superseded:** Stage 7 is complete — see `assets/MANIFEST.md` and `characters/VERSIONS.md`.  
+This file is kept as a record of the first style-check pass only.
+
+Generated against GAME_DESIGN.md §4 painterly/comic hero style.
 
 | File | Subject | Notes |
 |---|---|---|

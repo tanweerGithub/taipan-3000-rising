@@ -15,7 +15,9 @@
 ## Ships
 | Path | Use |
 |---|---|
-| `ships/morrowlit-hero.jpg` | Hangar |
+| `ships/morrowlit-hero.jpg` | Hangar static 2D fallback |
+| `ships/morrowlit-3d.png` | Hangar WebGL interim (alpha cutout of ship art — textured card) |
+| `ships/morrowlit.glb` | **Planned** — owner-supplied volumetric mesh; not in repo yet (see `TODO.md`) |
 | `ships/rival-freighter.jpg` | Hangar / lanes (Jex energy) |
 
 ## Environments

@@ -13,8 +13,8 @@
       var navBtn = document.querySelector('.nav-btn[data-screen="' + name + '"]');
       var active = name === id;
 
+      // Screen visibility: `hidden` is the single source of truth (nav keeps is-active)
       if (section) {
-        section.classList.toggle("is-active", active);
         if (active) {
           section.removeAttribute("hidden");
         } else {
@@ -37,6 +37,16 @@
     if (id === "galaxy") renderGalaxy();
     if (id === "tavern") renderTavern();
     if (id === "lender") renderLender();
+
+    // Optional hangar 3D: pause when leaving ship screen (additive; no-op if Ship3D absent)
+    if (id !== "ship" && window.Ship3D && typeof Ship3D.pause === "function") {
+      try {
+        Ship3D.pause();
+      } catch (e) {
+        /* flourish must never break nav */
+      }
+    }
+
     maybeShowStoryBeat();
   }
 
@@ -284,7 +294,7 @@
         "Trust: " +
         (Crew.trustOf(state, id) > 0 ? "+" : "") +
         Crew.trustOf(state, id) +
-        " · talk to shift it";
+        (Crew.getTalk(state, id) ? " · talk to shift it" : " · conversation settled for now");
       var talk = Crew.getTalk(state, id);
       var lastReply =
         state.crew &&
@@ -312,22 +322,33 @@
       }
     } else {
       trustLine.hidden = true;
-      dialogue.textContent =
-        Crew.approachText(state, id) + "\n\n" + (d.recruitOffer || "");
+      var mem = Crew.member(state, id);
+      var met = mem && mem.met;
+      if (met) {
+        dialogue.textContent =
+          (d.recruitDecline || "Not now is still a chart.") +
+          "\n\n" +
+          (d.recruitOffer || "");
+      } else {
+        dialogue.textContent =
+          Crew.approachText(state, id) + "\n\n" + (d.recruitOffer || "");
+      }
       var hire = document.createElement("button");
       hire.type = "button";
       hire.className = "btn";
       hire.id = "btn-crew-recruit";
       hire.setAttribute("data-crew-id", id);
       hire.textContent = "Offer a berth on the Morrowlit";
-      var later = document.createElement("button");
-      later.type = "button";
-      later.className = "btn btn-ghost";
-      later.id = "btn-crew-later";
-      later.setAttribute("data-crew-id", id);
-      later.textContent = "Not now";
       actions.appendChild(hire);
-      actions.appendChild(later);
+      if (!met) {
+        var later = document.createElement("button");
+        later.type = "button";
+        later.className = "btn btn-ghost";
+        later.id = "btn-crew-later";
+        later.setAttribute("data-crew-id", id);
+        later.textContent = "Not now";
+        actions.appendChild(later);
+      }
     }
   }
 
@@ -703,6 +724,14 @@
     el("ship-stat-weapons").textContent = state.ship.weaponSlots + " slots";
     el("ship-stat-speed").textContent = String(state.ship.speed);
     renderCrewRoster();
+    // Optional §6 flourish — never required; static art remains if this no-ops
+    if (window.Ship3D && typeof Ship3D.tryActivate === "function") {
+      try {
+        Ship3D.tryActivate(el("ship-3d-host"), el("ship-hero"));
+      } catch (e) {
+        /* ignore */
+      }
+    }
     renderHud();
   }
 
@@ -723,8 +752,10 @@
 
     var ctx = Narrative.tavernContext(state);
     el("tavern-heading").textContent = ctx.stationMeta.name;
+    var dockLabel = ctx.stationMeta.dockLabel || Trading.locationLabel(state);
     el("tavern-sub").textContent =
-      "Haven Spindle · visit #" +
+      dockLabel +
+      " · visit #" +
       ctx.visits +
       (ctx.turnsSince < 999 && ctx.visits > 1
         ? " · " + ctx.turnsSince + " turns since last drink here"
@@ -795,7 +826,7 @@
       el("tavern-murmur").textContent =
         "Ask for a rumor or listen in — the room changes as visits and turns pass.";
     }
-    setPanelMessage("tavern-message", "");
+    // Do not clear #tavern-message here — murmur + message both keep last action text
     renderCrewTavern();
     renderHud();
   }
@@ -803,15 +834,18 @@
   function renderLender() {
     var open = el("lender-open");
     var closed = el("lender-closed");
+    var aside = el("lender-aside");
     var cfg = window.GAME_DATA.moneylender;
     if (!window.Narrative || !Narrative.canUseMoneylender(state)) {
       if (open) open.hidden = true;
       if (closed) closed.hidden = false;
+      if (aside) aside.hidden = true;
       renderHud();
       return;
     }
     if (open) open.hidden = false;
     if (closed) closed.hidden = true;
+    if (aside) aside.hidden = false;
 
     var lines = window.GAME_DATA.moneylenderLines || {};
     var greet;
@@ -819,8 +853,10 @@
     else if (state.loanCount > 0) greet = (lines.greet_return || [])[0];
     else greet = (lines.greet_first || [])[0];
 
+    var dock = cfg.dockLabel || "Dock";
     el("lender-heading").textContent = cfg.name;
-    el("lender-sub").textContent = "Haven Spindle · debt as a relationship with rules";
+    el("lender-sub").textContent =
+      dock + " · debt as a relationship with rules";
     el("lender-name").textContent = cfg.name;
     el("lender-greeting").textContent =
       greet || "“Motion is how interest lives.”";
@@ -834,9 +870,11 @@
     terms.innerHTML = "";
     [
       "Min loan " + cfg.minLoan + " cr · max new loan " + cfg.maxLoan + " cr",
-      "Interest while debt remains — charged when you complete a hop",
+      "Flat interest while debt remains — charged when you complete a hop (" +
+        Math.round((cfg.interestPerTravel || 0) * 100) +
+        "% of outstanding debt)",
       "First loan may open a heritage beat (ledger ink)",
-      "No hard ruin — terms worsen; the game does not end",
+      "No hard ruin — debt pressure is soft; the game does not end",
     ].forEach(function (t) {
       var li = document.createElement("li");
       li.textContent = t;
@@ -1201,7 +1239,7 @@
     state.pendingEncounterResult = null;
     renderEncounterOverlay();
     renderHud();
-    var screen = document.querySelector(".screen.is-active");
+    var screen = document.querySelector(".screen:not([hidden])");
     if (screen && screen.id === "screen-galaxy") renderGalaxy();
     else if (screen && screen.id === "screen-station") renderDock();
     else {
@@ -1363,6 +1401,14 @@
       if (!hired.ok) {
         setPanelMessage("crew-message", hired.error || "Could not recruit.");
       } else {
+        if (state.crew) {
+          state.crew.lastTalkReply = {
+            companionId: rid,
+            text: hired.text,
+            trust: hired.trust,
+            delta: hired.trust,
+          };
+        }
         setPanelMessage(
           "crew-message",
           hired.text +
@@ -1370,8 +1416,6 @@
             hired.trust +
             ". Watch the HUD and Ship / Hangar crew panel."
         );
-        var dlg = el("crew-dialogue-text");
-        if (dlg) dlg.textContent = hired.text;
       }
       renderTavern();
       renderHud();
@@ -1385,8 +1429,6 @@
         "crew-message",
         (dLater && dLater.recruitDecline) || "Another time."
       );
-      var dlgL = el("crew-dialogue-text");
-      if (dlgL && dLater) dlgL.textContent = dLater.recruitDecline;
       renderCrewTavern();
       return;
     }
@@ -1461,6 +1503,7 @@
       var er = Trading.extractScavenge(state);
       if (!er.ok) state.lastMessage = er.error || "Extraction failed.";
       renderDock();
+      afterEconomyOrTravel();
       return;
     }
 
@@ -1497,10 +1540,9 @@
     var id = trigger.getAttribute("data-screen");
     if (!id) return;
 
-    if (trigger.matches("button.nav-btn, button.text-link, button.btn-ghost[data-screen]")) {
-      event.preventDefault();
-      showScreen(id);
-    }
+    // Any non-disabled control with data-screen may navigate
+    event.preventDefault();
+    showScreen(id);
   });
 
   document.addEventListener("keydown", function (event) {

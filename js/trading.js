@@ -526,6 +526,7 @@
       "/" +
       pool.max +
       ".";
+    if (global.Narrative) global.Narrative.onEconomyChange(state);
     return { ok: true, taken: take, gained: gained };
   }
 

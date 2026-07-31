@@ -24,7 +24,6 @@
     if (!state.pendingEpilogue) state.pendingEpilogue = null;
     if (state.loanCount == null) state.loanCount = 0;
     if (state.uniqueStations == null) state.uniqueStations = {};
-    if (state.profitableTrades == null) state.profitableTrades = 0;
   }
 
   function repOf(state, factionId) {
